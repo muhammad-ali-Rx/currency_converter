@@ -1,0 +1,870 @@
+import 'package:currency_converter/auth/auth_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
+class EditProfileScreen extends StatefulWidget {
+  const EditProfileScreen({super.key});
+
+  @override
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
+}
+
+class _EditProfileScreenState extends State<EditProfileScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _passwordController = TextEditingController();
+  
+  DateTime? _selectedDate;
+  bool _isLoading = false;
+  bool _hasChanges = false;
+  bool _isPasswordVisible = false;
+  File? _selectedImage;
+  Uint8List? _webImage;
+  String? _profileImageBase64;
+  
+  bool _isEditingName = false;
+  bool _isEditingPhone = false;
+  bool _isEditingAddress = false;
+  bool _isEditingPassword = false;
+
+  final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  // Fixed: Load fresh data from Firestore instead of cached data
+  Future<void> _loadUserData() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final userId = authProvider.user?.uid;
+    
+    if (userId != null) {
+      try {
+        // Load fresh data from Firestore
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .get();
+        
+        if (doc.exists) {
+          final userData = doc.data()!;
+          
+          if (mounted) {
+            setState(() {
+              _nameController.text = userData['name'] ?? '';
+              _phoneController.text = userData['phone'] ?? '';
+              _addressController.text = userData['address'] ?? '';
+              _profileImageBase64 = userData['profileImageBase64'];
+              
+              if (userData['dateOfBirth'] != null) {
+                _selectedDate = (userData['dateOfBirth'] as Timestamp).toDate();
+              }
+            });
+          }
+        }
+      } catch (e) {
+        print('Error loading user data: $e');
+        // Fallback to cached data
+        final userData = authProvider.userData;
+        if (userData != null && mounted) {
+          setState(() {
+            _nameController.text = userData['name'] ?? '';
+            _phoneController.text = userData['phone'] ?? '';
+            _addressController.text = userData['address'] ?? '';
+            _profileImageBase64 = userData['profileImageBase64'];
+            
+            if (userData['dateOfBirth'] != null) {
+              _selectedDate = (userData['dateOfBirth'] as Timestamp).toDate();
+            }
+          });
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildAppBar(),
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24),
+                        child: _buildProfileForm(),
+                      ),
+                    ),
+                    if (_hasChanges) _buildSaveButton(),
+                    _buildBottomNavigation(),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
+          ),
+          const Expanded(
+            child: Text(
+              'Edit Profile',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(width: 48),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileForm() {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        return Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              _buildProfilePicture(),
+              const SizedBox(height: 32),
+              _buildEditableField(
+                label: 'Username',
+                controller: _nameController,
+                isEditing: _isEditingName,
+                onTap: () => _toggleFieldEdit('name'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your name';
+                  }
+                  return null;
+                },
+              ),
+              _buildProfileField(
+                label: 'Email',
+                value: authProvider.userData?['email'] ?? '',
+                enabled: false,
+              ),
+              _buildEditableField(
+                label: 'Phone',
+                controller: _phoneController,
+                isEditing: _isEditingPhone,
+                onTap: () => _toggleFieldEdit('phone'),
+                keyboardType: TextInputType.phone,
+                validator: (value) {
+                  if (value != null && value.isNotEmpty) {
+                    if (!RegExp(r'^\+?[\d\s-()]+$').hasMatch(value)) {
+                      return 'Please enter a valid phone number';
+                    }
+                  }
+                  return null;
+                },
+              ),
+              _buildPasswordField(),
+              _buildDateField(),
+              _buildEditableField(
+                label: 'Address',
+                controller: _addressController,
+                isEditing: _isEditingAddress,
+                onTap: () => _toggleFieldEdit('address'),
+                maxLines: 2,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildProfilePicture() {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        return GestureDetector(
+          onTap: _pickImage,
+          child: Stack(
+            children: [
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4ECDC4).withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: ClipOval(
+                  child: _buildImageWidget(authProvider),
+                ),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4ECDC4),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 3),
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildImageWidget(AuthProvider authProvider) {
+    // Priority: Local selected image > Stored base64 > Default avatar
+    if (kIsWeb && _webImage != null) {
+      return Image.memory(
+        _webImage!,
+        width: 120,
+        height: 120,
+        fit: BoxFit.cover,
+      );
+    } else if (!kIsWeb && _selectedImage != null) {
+      return Image.file(
+        _selectedImage!,
+        width: 120,
+        height: 120,
+        fit: BoxFit.cover,
+      );
+    }
+    
+    if (_profileImageBase64 != null && _profileImageBase64!.isNotEmpty) {
+      try {
+        final bytes = base64Decode(_profileImageBase64!);
+        return Image.memory(
+          bytes,
+          width: 120,
+          height: 120,
+          fit: BoxFit.cover,
+        );
+      } catch (e) {
+        print('Error decoding base64 image: $e');
+      }
+    }
+    
+    return _buildDefaultAvatar(authProvider);
+  }
+
+  Widget _buildDefaultAvatar(AuthProvider authProvider) {
+    return Container(
+      width: 120,
+      height: 120,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [Color(0xFF4ECDC4), Color(0xFF44A08D)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          authProvider.userData?['name'] != null
+              ? authProvider.userData!['name'][0].toUpperCase()
+              : 'U',
+          style: const TextStyle(
+            fontSize: 48,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ... (keeping all other widget methods the same until _saveProfile)
+
+  Widget _buildEditableField({
+    required String label,
+    required TextEditingController controller,
+    required bool isEditing,
+    required VoidCallback onTap,
+    TextInputType? keyboardType,
+    int maxLines = 1,
+    String? Function(String?)? validator,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: isEditing ? null : onTap,
+            child: TextFormField(
+              controller: controller,
+              enabled: isEditing,
+              keyboardType: keyboardType,
+              maxLines: maxLines,
+              validator: validator,
+              onChanged: (value) => _markAsChanged(),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: isEditing ? Colors.black87 : Colors.grey.shade700,
+              ),
+              decoration: InputDecoration(
+                border: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFF4ECDC4), width: 2),
+                ),
+                disabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey.shade200),
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                suffixIcon: isEditing
+                    ? IconButton(
+                        icon: const Icon(Icons.check, color: Color(0xFF4ECDC4)),
+                        onPressed: () => _toggleFieldEdit(label.toLowerCase()),
+                      )
+                    : const Icon(Icons.edit, color: Colors.grey, size: 20),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPasswordField() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Password',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: _isEditingPassword ? null : () => _toggleFieldEdit('password'),
+            child: TextFormField(
+              controller: _passwordController,
+              enabled: _isEditingPassword,
+              obscureText: !_isPasswordVisible,
+              onChanged: (value) => _markAsChanged(),
+              validator: (value) {
+                if (_isEditingPassword && value != null && value.isNotEmpty) {
+                  if (value.length < 6) {
+                    return 'Password must be at least 6 characters';
+                  }
+                }
+                return null;
+              },
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: _isEditingPassword ? Colors.black87 : Colors.grey.shade700,
+              ),
+              decoration: InputDecoration(
+                hintText: _isEditingPassword ? 'Enter new password' : '••••••••',
+                border: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFF4ECDC4), width: 2),
+                ),
+                disabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey.shade200),
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                suffixIcon: _isEditingPassword
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                              color: Colors.grey,
+                            ),
+                            onPressed: () {
+                              if (mounted) {
+                                setState(() {
+                                  _isPasswordVisible = !_isPasswordVisible;
+                                });
+                              }
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.check, color: Color(0xFF4ECDC4)),
+                            onPressed: () => _toggleFieldEdit('password'),
+                          ),
+                        ],
+                      )
+                    : const Icon(Icons.edit, color: Colors.grey, size: 20),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileField({
+    required String label,
+    String? value,
+    bool enabled = true,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: Colors.grey.shade200),
+              ),
+            ),
+            child: Text(
+              value ?? '',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateField() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Date of birth',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          InkWell(
+            onTap: _selectDate,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Colors.grey.shade300),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _selectedDate != null
+                        ? '${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}'
+                        : 'Select date',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: _selectedDate != null ? Colors.black87 : Colors.grey,
+                    ),
+                  ),
+                  const Icon(
+                    Icons.calendar_today,
+                    color: Color(0xFF4ECDC4),
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSaveButton() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.all(24),
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : _saveProfile,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF4ECDC4),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 2,
+        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : const Text(
+                'Save Changes',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildBottomNavigation() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Colors.grey.shade200),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildNavItem(Icons.explore, 'Explore', false),
+          _buildNavItem(Icons.favorite_border, 'Trips', false),
+          _buildNavItem(Icons.person, 'Profile', true),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem(IconData icon, String label, bool isActive) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          color: isActive ? const Color(0xFF4ECDC4) : Colors.grey,
+          size: 24,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: isActive ? const Color(0xFF4ECDC4) : Colors.grey,
+            fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _toggleFieldEdit(String field) {
+    if (mounted) {
+      setState(() {
+        switch (field.toLowerCase()) {
+          case 'name':
+          case 'username':
+            _isEditingName = !_isEditingName;
+            break;
+          case 'phone':
+            _isEditingPhone = !_isEditingPhone;
+            break;
+          case 'address':
+            _isEditingAddress = !_isEditingAddress;
+            break;
+          case 'password':
+            _isEditingPassword = !_isEditingPassword;
+            if (!_isEditingPassword) {
+              _passwordController.clear();
+              _isPasswordVisible = false;
+            }
+            break;
+        }
+      });
+    }
+  }
+
+  void _markAsChanged() {
+    if (!_hasChanges && mounted) {
+      setState(() {
+        _hasChanges = true;
+      });
+    }
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 50,
+      );
+
+      if (image != null && mounted) {
+        if (kIsWeb) {
+          final bytes = await image.readAsBytes();
+          if (bytes.length > 900 * 1024) {
+            throw Exception('Image too large (max 900KB)');
+          }
+          setState(() {
+            _webImage = bytes;
+            _selectedImage = null;
+            _hasChanges = true;
+          });
+        } else {
+          final file = File(image.path);
+          final bytes = await file.readAsBytes();
+          if (bytes.length > 900 * 1024) {
+            throw Exception('Image too large (max 900KB)');
+          }
+          setState(() {
+            _selectedImage = file;
+            _webImage = null;
+            _hasChanges = true;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  String? _convertImageToBase64() {
+    try {
+      if (kIsWeb) {
+        if (_webImage != null) {
+          return base64Encode(_webImage!);
+        }
+      } else {
+        if (_selectedImage != null) {
+          final bytes = _selectedImage!.readAsBytesSync();
+          return base64Encode(bytes);
+        }
+      }
+      return null;
+    } catch (e) {
+      print('Error converting image to base64: $e');
+      return null;
+    }
+  }
+
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now().subtract(const Duration(days: 365 * 25)),
+      firstDate: DateTime(1950),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF4ECDC4),
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && picked != _selectedDate && mounted) {
+      setState(() {
+        _selectedDate = picked;
+        _hasChanges = true;
+      });
+    }
+  }
+
+  // Fixed: Improved save profile method
+  Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (!mounted) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final userId = authProvider.user?.uid;
+
+      if (userId == null) throw Exception('User not authenticated');
+
+      Map<String, dynamic> updateData = {
+        'name': _nameController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'address': _addressController.text.trim(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      if (_selectedDate != null) {
+        updateData['dateOfBirth'] = Timestamp.fromDate(_selectedDate!);
+      }
+
+      // Handle image conversion to base64
+      if (_selectedImage != null || _webImage != null) {
+        final base64Image = _convertImageToBase64();
+        if (base64Image != null) {
+          updateData['profileImageBase64'] = base64Image;
+          // Update local state immediately
+          _profileImageBase64 = base64Image;
+        }
+      }
+
+      // Update password if changed
+      if (_passwordController.text.isNotEmpty) {
+        await authProvider.user?.updatePassword(_passwordController.text.trim());
+        _passwordController.clear();
+      }
+
+      // Save to Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .update(updateData);
+
+      // Update auth display name
+      await authProvider.user?.updateDisplayName(_nameController.text.trim());
+      
+      // Force reload user data from Firestore
+      await authProvider.reloadUserData();
+
+      if (mounted) {
+        setState(() {
+          _hasChanges = false;
+          _isEditingName = false;
+          _isEditingPhone = false;
+          _isEditingAddress = false;
+          _isEditingPassword = false;
+          // Clear local image state after successful save
+          _selectedImage = null;
+          _webImage = null;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile updated successfully!'),
+            backgroundColor: Color(0xFF4ECDC4),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error saving profile: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+}
