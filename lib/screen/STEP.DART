@@ -25,7 +25,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
   File? _selectedImage;
   Uint8List? _webImage;
   bool _isLoading = false;
-  DateTime? _selectedDate; // Added for date of birth
+  DateTime? _selectedDate;
   
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -72,7 +72,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFF0A0A1A), // Dark theme background
       body: SafeArea(
         child: AnimatedBuilder(
           animation: _animationController,
@@ -147,7 +147,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
               style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF2D3748),
+                color: Colors.white, // Updated text color
               ),
               textAlign: TextAlign.center,
             ),
@@ -156,7 +156,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
               'Let\'s complete your profile to get started with the best experience',
               style: TextStyle(
                 fontSize: 16,
-                color: Color(0xFF718096),
+                color: Color(0xFF8A94A6), // Updated text color
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
@@ -175,7 +175,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF2D3748),
+            color: Colors.white, // Updated text color
           ),
         ),
         const SizedBox(height: 16),
@@ -215,7 +215,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
           _hasImage() ? 'Tap to change photo' : 'Tap to add photo',
           style: const TextStyle(
             fontSize: 14,
-            color: Color(0xFF718096),
+            color: Color(0xFF8A94A6), // Updated text color
           ),
         ),
       ],
@@ -265,7 +265,6 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
         ),
         const SizedBox(height: 20),
         
-        // NEW: Date of Birth Field
         _buildDateField(),
         const SizedBox(height: 20),
         
@@ -302,11 +301,10 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
     );
   }
 
-  // NEW: Date of Birth Field Widget
   Widget _buildDateField() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF0F0F23), // Dark card background
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -336,7 +334,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
                     Text(
                       'Date of Birth',
                       style: TextStyle(
-                        color: const Color(0xFF718096),
+                        color: const Color(0xFF8A94A6),
                         fontSize: 14,
                       ),
                     ),
@@ -349,8 +347,8 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                         color: _selectedDate != null 
-                            ? const Color(0xFF2D3748)
-                            : const Color(0xFF718096),
+                            ? Colors.white
+                            : const Color(0xFF8A94A6),
                       ),
                     ),
                   ],
@@ -358,7 +356,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
               ),
               Icon(
                 Icons.arrow_drop_down,
-                color: const Color(0xFF718096),
+                color: const Color(0xFF8A94A6),
                 size: 24,
               ),
             ],
@@ -378,7 +376,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF0F0F23), // Dark card background
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -396,12 +394,12 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
         style: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: Color(0xFF2D3748),
+          color: Colors.white, // Updated text color
         ),
         decoration: InputDecoration(
           labelText: label,
           labelStyle: const TextStyle(
-            color: Color(0xFF718096),
+            color: Color(0xFF8A94A6),
             fontSize: 14,
           ),
           prefixIcon: Icon(
@@ -439,7 +437,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
             ),
           ),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: const Color(0xFF0F0F23),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 20,
             vertical: 16,
@@ -505,14 +503,13 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
         'Skip for now',
         style: TextStyle(
           fontSize: 16,
-          color: Color(0xFF718096),
+          color: Color(0xFF8A94A6), // Updated text color
           fontWeight: FontWeight.w500,
         ),
       ),
     );
   }
 
-  // NEW: Date Selection Method
   Future<void> _selectDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -522,13 +519,13 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
+            colorScheme: const ColorScheme.dark( // Updated to dark theme
               primary: Color(0xFF4ECDC4),
               onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Color(0xFF2D3748),
+              surface: Color(0xFF0F0F23),
+              onSurface: Colors.white,
             ),
-            dialogBackgroundColor: Colors.white,
+            dialogBackgroundColor: const Color(0xFF0F0F23),
           ),
           child: child!,
         );
@@ -538,14 +535,12 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
     if (picked != null && picked != _selectedDate && mounted) {
       setState(() {
         _selectedDate = picked;
-        // Auto-calculate age from birth date
         final age = DateTime.now().year - picked.year;
         _ageController.text = age.toString();
       });
     }
   }
 
-  // NEW: Date Formatting Method
   String _formatDate(DateTime date) {
     final months = [
       'January', 'February', 'March', 'April', 'May', 'June',
@@ -567,7 +562,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
       if (image != null && mounted) {
         if (kIsWeb) {
           final bytes = await image.readAsBytes();
-          if (bytes.length > 1024 * 1024) { // 1MB limit
+          if (bytes.length > 1024 * 1024) {
             throw Exception('Image too large (max 1MB)');
           }
           setState(() {
@@ -577,7 +572,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
         } else {
           final file = File(image.path);
           final bytes = await file.readAsBytes();
-          if (bytes.length > 1024 * 1024) { // 1MB limit
+          if (bytes.length > 1024 * 1024) {
             throw Exception('Image too large (max 1MB)');
           }
           setState(() {
@@ -618,7 +613,6 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
   }
 
   Future<void> _completeProfile() async {
-    // Validate date selection
     if (_selectedDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -647,12 +641,11 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
         'phone': _phoneController.text.trim(),
         'address': _addressController.text.trim(),
         'age': int.parse(_ageController.text.trim()),
-        'dateOfBirth': Timestamp.fromDate(_selectedDate!), // NEW: Save date of birth
+        'dateOfBirth': Timestamp.fromDate(_selectedDate!),
         'profileCompleted': true,
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      // Add image if selected
       if (_hasImage()) {
         final base64Image = _convertImageToBase64();
         if (base64Image != null) {
@@ -660,17 +653,14 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
         }
       }
 
-      // Update Firestore
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
           .update(updateData);
 
-      // Reload user data
       await authProvider.reloadUserData();
 
       if (mounted) {
-        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Profile completed successfully! 🎉'),
@@ -682,7 +672,6 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
           ),
         );
 
-        // Navigate to main screen using named route
         _navigateToMainScreen();
       }
     } catch (e) {
@@ -710,7 +699,6 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
       final userId = authProvider.user?.uid;
 
       if (userId != null) {
-        // Mark as skipped but not completed
         await FirebaseFirestore.instance
             .collection('users')
             .doc(userId)
@@ -734,13 +722,10 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
     }
   }
 
-  // Helper method for navigation
   void _navigateToMainScreen() {
-    // Option 1: Using named routes (recommended)
     try {
       Navigator.pushReplacementNamed(context, '/main');
     } catch (e) {
-      // Option 2: Fallback - just pop back to previous screen
       print('Named route not found, using fallback navigation');
       Navigator.of(context).popUntil((route) => route.isFirst);
     }

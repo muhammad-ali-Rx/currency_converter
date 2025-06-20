@@ -3,45 +3,13 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:currency_converter/model/currency.dart';
 import 'package:currency_converter/screen/CurrencyDetailPage.dart';
+import 'package:currency_converter/screen/Stats.dart';
+import 'package:currency_converter/screen/convter.dart';
+import 'package:currency_converter/screen/edit_profile_screen.dart';
 import 'package:currency_converter/widgets/app_drawer.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:fl_chart/fl_chart.dart';
-
-class Crypto {
-  final String id;
-  final String symbol;
-  final String name;
-  final String image;
-  final double priceUsd;
-  final double percentChange24h;
-  final double marketCap;
-  final double totalVolume;
-
-  Crypto({
-    required this.id,
-    required this.symbol,
-    required this.name,
-    required this.image,
-    required this.priceUsd,
-    required this.percentChange24h,
-    required this.marketCap,
-    required this.totalVolume,
-  });
-
-  factory Crypto.fromJson(Map<String, dynamic> json) {
-    return Crypto(
-      id: json['id'] ?? '',
-      symbol: json['symbol'] ?? '',
-      name: json['name'] ?? '',
-      image: json['image'] ?? '',
-      priceUsd: (json['current_price'] ?? 0).toDouble(),
-      percentChange24h: (json['price_change_percentage_24h'] ?? 0).toDouble(),
-      marketCap: (json['market_cap'] ?? 0).toDouble(),
-      totalVolume: (json['total_volume'] ?? 0).toDouble(),
-    );
-  }
-}
 
 class Mainscreen extends StatelessWidget {
   const Mainscreen({super.key});
@@ -74,34 +42,71 @@ class _WalletScreenState extends State<WalletScreen> {
   // Search functionality
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  final bool _isSearchActive = false;
 
   String selectedSort = 'world Currency';
   String itemLabel = 'Currency';
 
-  List<String> sortingOptions = ['world Currency', 'crypto',];
-  List<Crypto> cryptoList = [];
-  List<Crypto> filteredCryptoList = [];
+  List<String> sortingOptions = ['world Currency'];
 
-  bool isCryptoLoading = false;
+  // Carousel
+  PageController _carouselController = PageController();
+  int _currentCarouselIndex = 0;
+  Timer? _carouselTimer;
+
+  List<Currency> _randomCarouselItems = [];
+
+  // Bottom navigation
+  int _currentIndex = 0;
+  
+  // FIXED: Proper availableCurrencies getter
+  List<Currency> get availableCurrencies => currencies.isNotEmpty ? currencies : <Currency>[];
 
   @override
   void initState() {
     super.initState();
     _fetchCurrencyData();
     _searchController.addListener(_onSearchChanged);
-    _startRealTimeUpdates(); 
+    _startRealTimeUpdates();
+    _startCarouselAutoSlide();
   }
 
   @override
   void dispose() {
-    _realTimeTimer?.cancel(); // Cancel timer
+    _realTimeTimer?.cancel();
+    _carouselTimer?.cancel();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
+    _carouselController.dispose();
     super.dispose();
   }
 
-  // Start real-time updates
+  void _startCarouselAutoSlide() {
+    _carouselTimer = Timer.periodic(Duration(seconds: 4), (timer) {
+      if (_carouselController.hasClients) {
+        final topItems = _getTopItems();
+        if (topItems.isNotEmpty) {
+          _currentCarouselIndex = (_currentCarouselIndex + 1) % topItems.length;
+          _carouselController.animateToPage(
+            _currentCarouselIndex,
+            duration: Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
+      }
+    });
+  }
+
+  List<dynamic> _getTopItems() {
+    if (currencies.isEmpty) return [];
+
+    if (_randomCarouselItems.isEmpty && currencies.isNotEmpty) {
+      _randomCarouselItems = [...currencies];
+      _randomCarouselItems.shuffle(Random());
+    }
+
+    return _randomCarouselItems.take(5).toList();
+  }
+
   void _startRealTimeUpdates() {
     _realTimeTimer?.cancel();
     _realTimeTimer = Timer.periodic(Duration(seconds: 2), (timer) {
@@ -111,25 +116,20 @@ class _WalletScreenState extends State<WalletScreen> {
     });
   }
 
-  // Real-time rate update function
   void _updateRatesRealTime() {
     if (!mounted) return;
-    
+
     setState(() {
       _lastUpdateTime = DateTime.now();
-      
-      // Update currencies with realistic fluctuations
+
       for (int i = 0; i < currencies.length; i++) {
         final random = Random();
-        
-        // Small realistic fluctuation (±0.1% to ±0.5%)
         final fluctuationPercent = (random.nextDouble() - 0.5) * 0.01;
         final newRate = currencies[i].rate * (1 + fluctuationPercent);
         final newAmount = currencies[i].amount * (1 + fluctuationPercent);
-        
-        // Update percentage change
-        final percentChange = currencies[i].percentChange + (random.nextDouble() - 0.5) * 0.1;
-        
+        final percentChange =
+            currencies[i].percentChange + (random.nextDouble() - 0.5) * 0.1;
+
         currencies[i] = Currency(
           code: currencies[i].code,
           name: currencies[i].name,
@@ -140,34 +140,11 @@ class _WalletScreenState extends State<WalletScreen> {
           color: currencies[i].color,
         );
       }
-      
-      // Update crypto prices
-      for (int i = 0; i < cryptoList.length; i++) {
-        final random = Random();
-        
-        // Crypto has higher volatility (±0.5% to ±2%)
-        final fluctuationPercent = (random.nextDouble() - 0.5) * 0.04;
-        final newPrice = cryptoList[i].priceUsd * (1 + fluctuationPercent);
-        final newPercentChange = cryptoList[i].percentChange24h + (random.nextDouble() - 0.5) * 0.5;
-        
-        cryptoList[i] = Crypto(
-          id: cryptoList[i].id,
-          symbol: cryptoList[i].symbol,
-          name: cryptoList[i].name,
-          image: cryptoList[i].image,
-          priceUsd: newPrice,
-          percentChange24h: newPercentChange,
-          marketCap: cryptoList[i].marketCap,
-          totalVolume: cryptoList[i].totalVolume,
-        );
-      }
-      
-      // Refresh filtered data
+
       _filterData();
     });
   }
 
-  // Toggle real-time updates
   void _toggleRealTimeUpdates() {
     setState(() {
       _isRealTimeActive = !_isRealTimeActive;
@@ -187,11 +164,7 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   void _filterData() {
-    if (selectedSort == 'crypto') {
-      _filterCryptos();
-    } else {
-      _filterCurrencies();
-    }
+    _filterCurrencies();
   }
 
   void _filterCurrencies() {
@@ -209,24 +182,9 @@ class _WalletScreenState extends State<WalletScreen> {
     }
   }
 
-  void _filterCryptos() {
-    filteredCryptoList.clear();
-    if (_searchQuery.isEmpty) {
-      filteredCryptoList.addAll(cryptoList);
-    } else {
-      filteredCryptoList.addAll(
-        cryptoList.where(
-          (crypto) =>
-              crypto.name.toLowerCase().contains(_searchQuery) ||
-              crypto.symbol.toLowerCase().contains(_searchQuery) ||
-              crypto.id.toLowerCase().contains(_searchQuery),
-        ),
-      );
-    }
-  }
-
   Future<void> _fetchCurrencyData() async {
-    const apiUrl = 'https://v6.exchangerate-api.com/v6/f23f645526cd179f30906490/latest/USD';
+    const apiUrl =
+        'https://v6.exchangerate-api.com/v6/f23f645526cd179f30906490/latest/USD';
 
     try {
       final response = await http.get(Uri.parse(apiUrl));
@@ -235,7 +193,8 @@ class _WalletScreenState extends State<WalletScreen> {
         final jsonResponse = json.decode(response.body);
 
         if (jsonResponse['result'] == 'success') {
-          final rates = jsonResponse['conversion_rates'] as Map<String, dynamic>;
+          final rates =
+              jsonResponse['conversion_rates'] as Map<String, dynamic>;
 
           final List<Map<String, String>> currencyData = [
             {'code': 'USD', 'name': 'US Dollar'},
@@ -261,10 +220,21 @@ class _WalletScreenState extends State<WalletScreen> {
           ];
 
           final List<Color> colors = [
-            Colors.blue, Colors.purple, Colors.orange, Colors.green,
-            Colors.red, Colors.teal, Colors.indigo, Colors.pink,
-            Colors.amber, Colors.cyan, Colors.deepOrange, Colors.lightGreen,
-            Colors.deepPurple, Colors.brown, Colors.blueGrey,
+            Colors.blue,
+            Colors.purple,
+            Colors.orange,
+            Colors.green,
+            Colors.red,
+            Colors.teal,
+            Colors.indigo,
+            Colors.pink,
+            Colors.amber,
+            Colors.cyan,
+            Colors.deepOrange,
+            Colors.lightGreen,
+            Colors.deepPurple,
+            Colors.brown,
+            Colors.blueGrey,
           ];
 
           final random = Random();
@@ -272,9 +242,11 @@ class _WalletScreenState extends State<WalletScreen> {
 
           for (var data in currencyData) {
             final code = data['code']!;
-            final rate = rates[code] != null ? (rates[code] as num).toDouble() : 1.0;
+            final rate =
+                rates[code] != null ? (rates[code] as num).toDouble() : 1.0;
             final amount = 1 * rate;
-            final percentChange = (random.nextDouble() * 1 * (random.nextBool() ? 1 : -1));
+            final percentChange =
+                (random.nextDouble() * 1 * (random.nextBool() ? 1 : -1));
             final color = colors[random.nextInt(colors.length)];
 
             currencies.add(
@@ -289,7 +261,6 @@ class _WalletScreenState extends State<WalletScreen> {
               ),
             );
           }
-          currencies.sort((a, b) => b.percentChange.compareTo(a.percentChange));
           filteredCurrencies.addAll(currencies);
         }
       }
@@ -312,12 +283,18 @@ class _WalletScreenState extends State<WalletScreen> {
       {'code': 'JPY', 'name': 'Japanese Yen'},
     ];
 
-    final List<Color> colors = [Colors.blue, Colors.purple, Colors.orange, Colors.green];
+    final List<Color> colors = [
+      Colors.blue,
+      Colors.purple,
+      Colors.orange,
+      Colors.green,
+    ];
     currencies.clear();
 
     for (var data in currencyData) {
       final amount = 1.0;
-      final percentChange = (random.nextDouble() * 1 * (random.nextBool() ? 1 : -1));
+      final percentChange =
+          (random.nextDouble() * 1 * (random.nextBool() ? 1 : -1));
       final color = colors[random.nextInt(colors.length)];
 
       currencies.add(
@@ -335,31 +312,130 @@ class _WalletScreenState extends State<WalletScreen> {
     filteredCurrencies.addAll(currencies);
   }
 
-  Widget _buildTotalBalanceCard() {
-    // Calculate total balance dynamically
-    double totalBalance = 0.0;
-    
-    if (selectedSort == 'crypto') {
-      totalBalance = filteredCryptoList.fold(0.0, (sum, crypto) => sum + crypto.priceUsd);
-    } else {
-      totalBalance = filteredCurrencies.fold(0.0, (sum, currency) => sum + (currency.amount / currency.rate));
-    }
+  Widget _buildTopCurrenciesCarousel() {
+    final topItems = _getTopItems();
+
+    if (topItems.isEmpty) return SizedBox.shrink();
 
     return Container(
       margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Featured Currencies',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      if (_carouselController.hasClients &&
+                          topItems.isNotEmpty) {
+                        _currentCarouselIndex =
+                            (_currentCarouselIndex - 1 + topItems.length) %
+                            topItems.length;
+                        _carouselController.animateToPage(
+                          _currentCarouselIndex,
+                          duration: Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      }
+                    },
+                    icon: Icon(Icons.chevron_left, color: Colors.white54),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      if (_carouselController.hasClients &&
+                          topItems.isNotEmpty) {
+                        _currentCarouselIndex =
+                            (_currentCarouselIndex + 1) % topItems.length;
+                        _carouselController.animateToPage(
+                          _currentCarouselIndex,
+                          duration: Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      }
+                    },
+                    icon: Icon(Icons.chevron_right, color: Colors.white54),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            height: 200,
+            child: PageView.builder(
+              controller: _carouselController,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentCarouselIndex = index;
+                });
+              },
+              itemCount: topItems.length,
+              itemBuilder: (context, index) {
+                final item = topItems[index];
+                return _buildCarouselCard(item);
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: topItems.asMap().entries.map((entry) {
+              return Container(
+                width: 8,
+                height: 8,
+                margin: EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _currentCarouselIndex == entry.key
+                      ? Colors.blue
+                      : Colors.white38,
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCarouselCard(dynamic item) {
+    final currency = item as Currency;
+    final isPositive = currency.percentChange >= 0;
+    final price = currency.rate;
+    final change = currency.percentChange;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [const Color(0xFF3C4858), const Color(0xFF2D3A4B)],
+          colors: [const Color(0xFF0F0F23), const Color(0xFF1A1A2E)],
         ),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isPositive
+              ? Colors.green.withOpacity(0.3)
+              : Colors.red.withOpacity(0.3),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -369,102 +445,126 @@ class _WalletScreenState extends State<WalletScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
                 children: [
-                  Row(
+                  CircleAvatar(
+                    backgroundColor: currency.color,
+                    child: Text(
+                      currency.code[0],
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Total Balance',
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                      ),
-                      SizedBox(width: 8),
-                      // Live indicator
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: _isRealTimeActive ? Colors.green : Colors.white,
-                          borderRadius: BorderRadius.circular(10),
+                        currency.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
-                        child: Text(
-                          _isRealTimeActive ? 'LIVE' : 'PAUSED',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      ),
+                      Text(
+                        currency.code,
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  // Animated balance
-                  AnimatedDefaultTextStyle(
-                    duration: Duration(milliseconds: 500),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 36,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    child: Text('\$${totalBalance.toStringAsFixed(2)}'),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Last updated: ${_lastUpdateTime.toString().substring(11, 19)}',
-                    style: const TextStyle(color: Colors.white54, fontSize: 14),
-                  ),
                 ],
               ),
-              // Animated wallet icon
-              AnimatedContainer(
-                duration: Duration(milliseconds: 500),
-                padding: const EdgeInsets.all(16),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(50),
+                  color: _isRealTimeActive
+                      ? Colors.green.withOpacity(0.2)
+                      : Colors.orange.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _isRealTimeActive ? Colors.green : Colors.orange,
+                    width: 1,
+                  ),
                 ),
-                child: Icon(
-                  Icons.account_balance_wallet,
-                  color: Colors.white,
-                  size: 32,
+                child: Text(
+                  _isRealTimeActive ? 'LIVE' : 'PAUSED',
+                  style: TextStyle(
+                    color: _isRealTimeActive ? Colors.green : Colors.orange,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              ElevatedButton.icon(
-                onPressed: () => print('Transfer pressed'),
-                icon: const Icon(Icons.send),
-                label: const Text('Transfer'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '\$${price.toStringAsFixed(4)}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'Updated: ${_lastUpdateTime.toString().substring(11, 19)}',
+                    style: const TextStyle(color: Colors.white38, fontSize: 12),
+                  ),
+                ],
               ),
-              ElevatedButton.icon(
-                onPressed: () => print('Deposit pressed'),
-                icon: const Icon(Icons.account_balance),
-                label: const Text('Deposit'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-              ElevatedButton.icon(
-                onPressed: () => print('Convert pressed'),
-                icon: const Icon(Icons.swap_horiz),
-                label: const Text('Convert'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orangeAccent,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isPositive
+                          ? Colors.green.withOpacity(0.2)
+                          : Colors.red.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isPositive ? Colors.green : Colors.red,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isPositive ? Icons.trending_up : Icons.trending_down,
+                          size: 14,
+                          color: isPositive ? Colors.green : Colors.red,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          '${isPositive ? '+' : ''}${change.toStringAsFixed(2)}%',
+                          style: TextStyle(
+                            color: isPositive ? Colors.green : Colors.red,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildChart(currency),
+                ],
               ),
             ],
           ),
@@ -477,11 +577,12 @@ class _WalletScreenState extends State<WalletScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       decoration: BoxDecoration(
-        color: Color(0xFF1F222A),
+        color: Color(0xFF0F0F23),
         borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.2),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),
@@ -491,12 +592,12 @@ class _WalletScreenState extends State<WalletScreen> {
         controller: _searchController,
         style: TextStyle(color: Colors.white),
         decoration: InputDecoration(
-          hintText: selectedSort == 'crypto' ? 'Search cryptocurrencies...' : 'Search currencies...',
-          hintStyle: TextStyle(color: Colors.white54),
-          prefixIcon: Icon(Icons.search, color: Colors.white54),
+          hintText: 'Search currencies...',
+          hintStyle: TextStyle(color: Colors.white38),
+          prefixIcon: Icon(Icons.search, color: Colors.white38),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  icon: Icon(Icons.clear, color: Colors.white54),
+                  icon: Icon(Icons.clear, color: Colors.white38),
                   onPressed: () => _searchController.clear(),
                 )
               : null,
@@ -510,13 +611,13 @@ class _WalletScreenState extends State<WalletScreen> {
   Widget _buildSearchResultsHeader() {
     if (_searchQuery.isEmpty) return SizedBox.shrink();
 
-    int resultCount = selectedSort == 'crypto' ? filteredCryptoList.length : filteredCurrencies.length;
+    int resultCount = filteredCurrencies.length;
 
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Color(0xFF1F222A),
+        color: Color(0xFF0F0F23),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.blue.withOpacity(0.3)),
       ),
@@ -530,12 +631,20 @@ class _WalletScreenState extends State<WalletScreen> {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.blue.withOpacity(0.5), width: 1),
             ),
-            child: Icon(Icons.search_rounded, color: Colors.blue[300], size: 22),
+            child: Icon(
+              Icons.search_rounded,
+              color: Colors.blue[300],
+              size: 22,
+            ),
           ),
           Expanded(
             child: Text(
               'Found $resultCount result${resultCount != 1 ? 's' : ''} for "$_searchQuery"',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 14),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+              ),
             ),
           ),
           if (_searchQuery.isNotEmpty)
@@ -547,9 +656,16 @@ class _WalletScreenState extends State<WalletScreen> {
                 decoration: BoxDecoration(
                   color: Colors.blue.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue.withOpacity(0.5), width: 1),
+                  border: Border.all(
+                    color: Colors.blue.withOpacity(0.5),
+                    width: 1,
+                  ),
                 ),
-                child: Icon(Icons.close_rounded, color: Colors.blue[300], size: 18),
+                child: Icon(
+                  Icons.close_rounded,
+                  color: Colors.blue[300],
+                  size: 18,
+                ),
               ),
             ),
         ],
@@ -557,73 +673,14 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  Future<List<Crypto>> _fetchCryptos() async {
-    try {
-      const apiUrl = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false';
-      final response = await http.get(Uri.parse(apiUrl));
-
-      if (response.statusCode == 200) {
-        final List<dynamic> jsonData = json.decode(response.body);
-        return jsonData.map((json) => Crypto.fromJson(json)).toList();
-      } else {
-        throw Exception('Failed to load crypto data');
-      }
-    } catch (e) {
-      print('Error fetching crypto data: $e');
-      return _getMockCryptoData();
-    }
-  }
-
-  List<Crypto> _getMockCryptoData() {
-    final random = Random();
-    return [
-      Crypto(
-        id: 'bitcoin', symbol: 'btc', name: 'Bitcoin', image: '',
-        priceUsd: 64000 + random.nextDouble() * 2000,
-        percentChange24h: 1.5 + random.nextDouble() * 2,
-        marketCap: 1200000000000, totalVolume: 25000000000,
-      ),
-      Crypto(
-        id: 'ethereum', symbol: 'eth', name: 'Ethereum', image: '',
-        priceUsd: 3500 + random.nextDouble() * 200,
-        percentChange24h: -0.8 + random.nextDouble() * 1.6,
-        marketCap: 420000000000, totalVolume: 15000000000,
-      ),
-      Crypto(
-        id: 'solana', symbol: 'sol', name: 'Solana', image: '',
-        priceUsd: 150 + random.nextDouble() * 20,
-        percentChange24h: 2.1 + random.nextDouble() * 2,
-        marketCap: 65000000000, totalVolume: 2500000000,
-      ),
-    ];
-  }
-
   void _sortCurrencies(String criteria) async {
     setState(() {
       selectedSort = criteria;
-      isCryptoLoading = criteria == 'crypto';
       _searchController.clear();
       _searchQuery = '';
+      itemLabel = 'Currency';
+      _filterCurrencies();
     });
-
-    if (criteria == 'crypto') {
-      final fetched = await _fetchCryptos();
-      setState(() {
-        cryptoList = fetched;
-        filteredCryptoList.clear();
-        filteredCryptoList.addAll(fetched);
-        isCryptoLoading = false;
-        itemLabel = 'Crypto';
-      });
-    } else {
-      setState(() {
-        cryptoList = [];
-        filteredCryptoList = [];
-        isCryptoLoading = false;
-        itemLabel = criteria == 'stock' ? 'Stock' : 'Currency';
-        _filterCurrencies();
-      });
-    }
   }
 
   Widget _buildSortingHeader() {
@@ -631,31 +688,11 @@ class _WalletScreenState extends State<WalletScreen> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          'Sort by $itemLabel',
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 18, color: Colors.white),
-        ),
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: Color(0xFF1F222A),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue.withOpacity(0.5)),
-          ),
-          child: DropdownButton<String>(
-            value: selectedSort,
-            underline: SizedBox(),
-            dropdownColor: Color(0xFF1F222A),
-            icon: Icon(Icons.arrow_drop_down, color: Colors.white),
-            style: TextStyle(color: Colors.white, fontSize: 16),
-            items: sortingOptions.map((String value) {
-              return DropdownMenuItem<String>(
-                value: value,
-                child: Text(value, style: TextStyle(color: Colors.white)),
-              );
-            }).toList(),
-            onChanged: (String? newValue) {
-              if (newValue != null) _sortCurrencies(newValue);
-            },
+          'All World Currencies',
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            color: Colors.white,
           ),
         ),
       ],
@@ -664,12 +701,12 @@ class _WalletScreenState extends State<WalletScreen> {
 
   Widget _buildChart(currency) {
     final random = Random();
-    final bool isPositive = currency.percentChange >= 0;
+    final bool isPositive = (currency as Currency).percentChange >= 0;
     final Color chartColor = isPositive ? Colors.green : Colors.red;
 
     final List<FlSpot> spots = [];
-    double baseRate = currency.rate;
-    
+    double baseRate = (currency as Currency).rate;
+
     for (int i = 0; i < 24; i++) {
       if (i == 0) {
         spots.add(FlSpot(i.toDouble(), baseRate));
@@ -711,65 +748,16 @@ class _WalletScreenState extends State<WalletScreen> {
                         strokeColor: Colors.white,
                       );
                     }
-                    return FlDotCirclePainter(radius: 0, color: Colors.transparent);
+                    return FlDotCirclePainter(
+                      radius: 0,
+                      color: Colors.transparent,
+                    );
                   },
                 ),
-                belowBarData: BarAreaData(show: true, color: chartColor.withOpacity(0.1)),
-                isStrokeCapRound: true,
-                barWidth: 2,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCryptoChart(Crypto crypto) {
-    final random = Random();
-    final List<FlSpot> spots = List.generate(
-      24,
-      (index) => FlSpot(
-        index.toDouble(),
-        crypto.priceUsd + random.nextDouble() * crypto.priceUsd * 0.05,
-      ),
-    );
-
-    final Color chartColor = crypto.percentChange24h >= 0 ? Colors.green : Colors.red;
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: chartColor.withOpacity(0.3)),
-      ),
-      child: SizedBox(
-        height: 50,
-        width: 80,
-        child: LineChart(
-          LineChartData(
-            gridData: FlGridData(show: false),
-            titlesData: FlTitlesData(show: false),
-            borderData: FlBorderData(show: false),
-            lineBarsData: [
-              LineChartBarData(
-                spots: spots,
-                isCurved: true,
-                color: chartColor,
-                dotData: FlDotData(
+                belowBarData: BarAreaData(
                   show: true,
-                  getDotPainter: (spot, percent, barData, index) {
-                    if (index == spots.length - 1) {
-                      return FlDotCirclePainter(
-                        radius: 3,
-                        color: chartColor,
-                        strokeWidth: 2,
-                        strokeColor: Colors.white,
-                      );
-                    }
-                    return FlDotCirclePainter(radius: 0, color: Colors.transparent);
-                  },
+                  color: chartColor.withOpacity(0.1),
                 ),
-                belowBarData: BarAreaData(show: true, color: chartColor.withOpacity(0.1)),
                 isStrokeCapRound: true,
                 barWidth: 2,
               ),
@@ -780,68 +768,125 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  Widget _buildCurrencyItem( currency) {
-  final isPositive = currency.percentChange >= 0;
+  Widget _buildCurrencyItem(currency) {
+    final isPositive = currency.percentChange >= 0;
 
-  return GestureDetector(
-    onTap: () {
-      // Yahan navigate karein coin ke detail page pe
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CurrencyDetailPage(currency: currency),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CurrencyDetailPage(currency: currency),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F0F23),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(
+            color: isPositive
+                ? Colors.green.withOpacity(0.3)
+                : Colors.red.withOpacity(0.3),
+            width: 1,
+          ),
         ),
-      );
-    },
-    child: Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1F222A),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: isPositive ? Colors.green.withOpacity(0.3) : Colors.red.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AnimatedContainer(
-            duration: Duration(milliseconds: 500),
-            child: CircleAvatar(
-              backgroundColor: currency.color,
-              child: Text(
-                currency.code[0],
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AnimatedContainer(
+              duration: Duration(milliseconds: 500),
+              child: CircleAvatar(
+                backgroundColor: currency.color,
+                child: Text(
+                  currency.code[0],
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        currency.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _isRealTimeActive
+                              ? Colors.green.withOpacity(0.2)
+                              : Colors.orange.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: _isRealTimeActive
+                                ? Colors.green
+                                : Colors.orange,
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          _isRealTimeActive ? 'LIVE' : 'PAUSED',
+                          style: TextStyle(
+                            color: _isRealTimeActive
+                                ? Colors.green
+                                : Colors.orange,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  AnimatedDefaultTextStyle(
+                    duration: Duration(milliseconds: 300),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      color: isPositive ? Colors.green : Colors.red,
+                    ),
+                    child: Text(
+                      '${currency.amount.toStringAsFixed(4)} ${currency.code}',
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '1 USD = ${currency.rate.toStringAsFixed(4)} ${currency.code}',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    'Updated: ${_lastUpdateTime.toString().substring(11, 19)}',
+                    style: TextStyle(
+                      color: Colors.green.withOpacity(0.8),
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      currency.name,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: _isRealTimeActive ? Colors.green : Colors.orange,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        _isRealTimeActive ? 'LIVE' : 'PAUSED',
-                        style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
                 AnimatedDefaultTextStyle(
                   duration: Duration(milliseconds: 300),
                   style: TextStyle(
@@ -849,202 +894,94 @@ class _WalletScreenState extends State<WalletScreen> {
                     fontSize: 16,
                     color: isPositive ? Colors.green : Colors.red,
                   ),
-                  child: Text('${currency.amount.toStringAsFixed(4)} ${currency.code}'),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '1 USD = ${currency.rate.toStringAsFixed(4)} ${currency.code}',
-                  style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14),
-                ),
-                Text(
-                  'Updated: ${_lastUpdateTime.toString().substring(11, 19)}',
-                  style: TextStyle(color: Colors.green.withOpacity(0.8), fontSize: 10),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              AnimatedDefaultTextStyle(
-                duration: Duration(milliseconds: 300),
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                  color: isPositive ? Colors.green : Colors.red,
-                ),
-                child: Text('\$${(currency.amount / currency.rate).toStringAsFixed(4)}'),
-              ),
-              const SizedBox(height: 4),
-              AnimatedContainer(
-                duration: Duration(milliseconds: 300),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isPositive ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: isPositive ? Colors.green : Colors.red, width: 1),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isPositive ? Icons.trending_up : Icons.trending_down,
-                      size: 12,
-                      color: isPositive ? Colors.green : Colors.red,
-                    ),
-                    SizedBox(width: 2),
-                    Text(
-                      '${isPositive ? '+' : ''}${currency.percentChange.toStringAsFixed(2)}%',
-                      style: TextStyle(
-                        color: isPositive ? Colors.green : Colors.red,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 4),
-              _buildChart(currency),
-            ],
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-
-  Widget _buildCryptoItem(Crypto crypto) {
-    final isPositive = crypto.percentChange24h >= 0;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1F222A),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: isPositive ? Colors.green.withOpacity(0.3) : Colors.red.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AnimatedContainer(
-            duration: Duration(milliseconds: 500),
-            child: CircleAvatar(
-              backgroundColor: isPositive ? Colors.green : Colors.red,
-              child: Text(
-                crypto.symbol.toUpperCase().substring(0, 1),
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      crypto.name,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: _isRealTimeActive ? Colors.green : Colors.orange,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        _isRealTimeActive ? 'LIVE' : 'PAUSED',
-                        style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                AnimatedDefaultTextStyle(
-                  duration: Duration(milliseconds: 300),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                    color: isPositive ? Colors.green : Colors.red,
+                  child: Text(
+                    '\$${(currency.amount / currency.rate).toStringAsFixed(4)}',
                   ),
-                  child: Text('\$${crypto.priceUsd.toStringAsFixed(2)}'),
                 ),
-                Text(
-                  'Updated: ${_lastUpdateTime.toString().substring(11, 19)}',
-                  style: TextStyle(color: Colors.green.withOpacity(0.8), fontSize: 10),
+                const SizedBox(height: 4),
+                AnimatedContainer(
+                  duration: Duration(milliseconds: 300),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isPositive
+                        ? Colors.green.withOpacity(0.2)
+                        : Colors.red.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: isPositive ? Colors.green : Colors.red,
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isPositive ? Icons.trending_up : Icons.trending_down,
+                        size: 12,
+                        color: isPositive ? Colors.green : Colors.red,
+                      ),
+                      SizedBox(width: 2),
+                      Text(
+                        '${isPositive ? '+' : ''}${currency.percentChange.toStringAsFixed(2)}%',
+                        style: TextStyle(
+                          color: isPositive ? Colors.green : Colors.red,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(height: 4),
+                _buildChart(currency),
               ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              AnimatedDefaultTextStyle(
-                duration: Duration(milliseconds: 300),
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                  color: isPositive ? Colors.green : Colors.red,
-                ),
-                child: Text('\$${crypto.priceUsd.toStringAsFixed(2)}'),
-              ),
-              const SizedBox(height: 4),
-              AnimatedContainer(
-                duration: Duration(milliseconds: 300),
-                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isPositive ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: isPositive ? Colors.green : Colors.red, width: 1),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isPositive ? Icons.trending_up : Icons.trending_down,
-                      size: 12,
-                      color: isPositive ? Colors.green : Colors.red,
-                    ),
-                    SizedBox(width: 2),
-                    Text(
-                      '${isPositive ? '+' : ''}${crypto.percentChange24h.toStringAsFixed(2)}%',
-                      style: TextStyle(
-                        color: isPositive ? Colors.green : Colors.red,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 4),
-              _buildCryptoChart(crypto),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildBottomNavBar() {
     return BottomNavigationBar(
-      backgroundColor: Color(0xFF181A20),
-      selectedItemColor: Colors.blueAccent,
-      unselectedItemColor: Colors.grey,
+      backgroundColor: Color(0xFF0A0A1A),
+      selectedItemColor: Color(0xFF4ECDC4),
+      unselectedItemColor: Color(0xFF8A94A6),
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.wallet), label: 'Wallet'),
         BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: 'Stats'),
         BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
       ],
-      currentIndex: 0,
-      onTap: (index) {},
+      currentIndex: _currentIndex,
+      onTap: (index) {
+        setState(() {
+          _currentIndex = index;
+        });
+
+        switch (index) {
+          case 0:
+            break;
+          case 1:
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StatsScreen(currencies: currencies),
+              ),
+            );
+            break;
+          case 2:
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const EditProfileScreen(),
+              ),
+            );
+            break;
+        }
+      },
     );
   }
 
@@ -1057,7 +994,11 @@ class _WalletScreenState extends State<WalletScreen> {
           SizedBox(height: 16),
           Text(
             'No results found',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
           ),
           SizedBox(height: 8),
           Text(
@@ -1078,29 +1019,75 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
+  // FIXED: Updated converter button with proper error handling
+  Widget _buildConverterButton() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: ElevatedButton.icon(
+        onPressed: () {
+          if (currencies.isNotEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => CurrencyConverterScreen(
+                availableCurrencies: currencies,
+              )),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Please wait, currencies are loading...')),
+            );
+          }
+        },
+        icon: const Icon(Icons.swap_horiz, size: 24),
+        label: const Text(
+          'Currency Converter',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Color(0xFF4ECDC4),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 8,
+          shadowColor: Color(0xFF4ECDC4).withOpacity(0.3),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final currentList = selectedSort == 'crypto' ? filteredCryptoList : filteredCurrencies;
-    final showNoResults = _searchQuery.isNotEmpty && currentList.isEmpty && !isLoading && !isCryptoLoading;
+    final currentList = filteredCurrencies;
+    final showNoResults =
+        _searchQuery.isNotEmpty && currentList.isEmpty && !isLoading;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF181A20),
+      backgroundColor: const Color(0xFF0A0A1A),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF181A20),
+        backgroundColor: const Color(0xFF0A0A1A),
         elevation: 0,
         title: const Text(
           'Crypto Wallet',
-          style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600, color: Colors.white),
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
         ),
         centerTitle: true,
         leading: Builder(
           builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Color(0xFF8A94A6), size: 28),
+            icon: const Icon(
+              Icons.menu,
+              color: Color(0xFF8A94A6),
+              size: 28,
+            ),
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
         actions: [
-          // Real-time toggle button
           IconButton(
             icon: Icon(
               _isRealTimeActive ? Icons.pause : Icons.play_arrow,
@@ -1116,43 +1103,40 @@ class _WalletScreenState extends State<WalletScreen> {
         ],
       ),
       drawer: const AppDrawer(),
-      body: (isLoading || (selectedSort == 'crypto' && isCryptoLoading))
+      body: (isLoading)
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: selectedSort == 'crypto'
-                  ? () async => _sortCurrencies('crypto')
-                  : _fetchCurrencyData,
+              onRefresh: _fetchCurrencyData,
               child: showNoResults
                   ? _buildNoResultsWidget()
                   : ListView.builder(
-                      itemCount: currentList.length + 4,
+                      itemCount: currentList.length + 5,
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.only(bottom: 80, top: 20),
                       itemBuilder: (context, index) {
-                        if (index == 0) return _buildTotalBalanceCard();
-                        if (index == 1) return _buildSearchBar();
-                        if (index == 2) return _buildSearchResultsHeader();
-                        if (index == 3) {
+                        if (index == 0) return _buildTopCurrenciesCarousel();
+                        if (index == 1) return _buildConverterButton();
+                        if (index == 2) return _buildSearchBar();
+                        if (index == 3) return _buildSearchResultsHeader();
+                        if (index == 4) {
                           return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 10,
+                            ),
                             child: _buildSortingHeader(),
                           );
                         }
 
-                        final itemIndex = index - 4;
-                        if (selectedSort == 'crypto') {
-                          final crypto = filteredCryptoList[itemIndex];
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                            child: _buildCryptoItem(crypto),
-                          );
-                        } else {
-                          final currency = filteredCurrencies[itemIndex];
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                            child: _buildCurrencyItem(currency),
-                          );
-                        }
+                        final itemIndex = index - 5;
+                        final currency = filteredCurrencies[itemIndex];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 6,
+                          ),
+                          child: _buildCurrencyItem(currency),
+                        );
                       },
                     ),
             ),

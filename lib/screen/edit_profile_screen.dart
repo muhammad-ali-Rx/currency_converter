@@ -1,4 +1,7 @@
 import 'package:currency_converter/auth/auth_provider.dart';
+import 'package:currency_converter/screen/Stats.dart';
+
+import 'package:currency_converter/model/currency.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -34,6 +37,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   bool _isEditingPhone = false;
   bool _isEditingAddress = false;
   bool _isEditingPassword = false;
+
+  // Bottom navigation
+  int _currentIndex = 2; // Profile is selected by default
 
   final ImagePicker _picker = ImagePicker();
 
@@ -95,7 +101,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFF0A0A1A), // Dark theme background
       body: SafeArea(
         child: Column(
           children: [
@@ -104,11 +110,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               child: Container(
                 margin: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: const Color(0xFF0F0F23), // Dark card background
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFF1A1A2E)), // Dark border
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withOpacity(0.3),
                       blurRadius: 10,
                       offset: const Offset(0, 5),
                     ),
@@ -123,7 +130,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ),
                     ),
                     if (_hasChanges) _buildSaveButton(),
-                    _buildBottomNavigation(),
                   ],
                 ),
               ),
@@ -131,6 +137,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: _buildBottomNavigation(),
     );
   }
 
@@ -141,7 +148,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.white), // Updated color
           ),
           const Expanded(
             child: Text(
@@ -149,7 +156,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
-                color: Colors.black87,
+                color: Colors.white, // Updated color
               ),
               textAlign: TextAlign.center,
             ),
@@ -250,7 +257,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xFF4ECDC4),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 3),
+                    border: Border.all(color: const Color(0xFF0F0F23), width: 3), // Updated border color
                   ),
                   child: const Icon(
                     Icons.camera_alt,
@@ -328,8 +335,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  // ... (keeping all other widget methods the same until _saveProfile)
-
   Widget _buildEditableField({
     required String label,
     required TextEditingController controller,
@@ -348,7 +353,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             label,
             style: const TextStyle(
               fontSize: 14,
-              color: Colors.grey,
+              color: Color(0xFF8A94A6), // Updated color
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -365,20 +370,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: isEditing ? Colors.black87 : Colors.grey.shade700,
+                color: isEditing ? Colors.white : const Color(0xFF8A94A6), // Updated colors
               ),
               decoration: InputDecoration(
                 border: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: const Color(0xFF1A1A2E)), // Updated color
                 ),
                 enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: const Color(0xFF1A1A2E)), // Updated color
                 ),
                 focusedBorder: const UnderlineInputBorder(
                   borderSide: BorderSide(color: Color(0xFF4ECDC4), width: 2),
                 ),
                 disabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey.shade200),
+                  borderSide: BorderSide(color: const Color(0xFF1A1A2E).withOpacity(0.5)), // Updated color
                 ),
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 suffixIcon: isEditing
@@ -386,7 +391,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         icon: const Icon(Icons.check, color: Color(0xFF4ECDC4)),
                         onPressed: () => _toggleFieldEdit(label.toLowerCase()),
                       )
-                    : const Icon(Icons.edit, color: Colors.grey, size: 20),
+                    : const Icon(Icons.edit, color: Color(0xFF8A94A6), size: 20), // Updated color
+                errorStyle: const TextStyle(color: Color(0xFFEF4444)), // Error color
               ),
             ),
           ),
@@ -405,7 +411,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             'Password',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey,
+              color: Color(0xFF8A94A6), // Updated color
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -428,21 +434,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: _isEditingPassword ? Colors.black87 : Colors.grey.shade700,
+                color: _isEditingPassword ? Colors.white : const Color(0xFF8A94A6), // Updated colors
               ),
               decoration: InputDecoration(
                 hintText: _isEditingPassword ? 'Enter new password' : '••••••••',
+                hintStyle: const TextStyle(color: Color(0xFF8A94A6)), // Updated color
                 border: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: const Color(0xFF1A1A2E)), // Updated color
                 ),
                 enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: const Color(0xFF1A1A2E)), // Updated color
                 ),
                 focusedBorder: const UnderlineInputBorder(
                   borderSide: BorderSide(color: Color(0xFF4ECDC4), width: 2),
                 ),
                 disabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey.shade200),
+                  borderSide: BorderSide(color: const Color(0xFF1A1A2E).withOpacity(0.5)), // Updated color
                 ),
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 suffixIcon: _isEditingPassword
@@ -452,7 +459,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           IconButton(
                             icon: Icon(
                               _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                              color: Colors.grey,
+                              color: const Color(0xFF8A94A6), // Updated color
                             ),
                             onPressed: () {
                               if (mounted) {
@@ -468,7 +475,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                         ],
                       )
-                    : const Icon(Icons.edit, color: Colors.grey, size: 20),
+                    : const Icon(Icons.edit, color: Color(0xFF8A94A6), size: 20), // Updated color
+                errorStyle: const TextStyle(color: Color(0xFFEF4444)), // Error color
               ),
             ),
           ),
@@ -491,7 +499,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             label,
             style: const TextStyle(
               fontSize: 14,
-              color: Colors.grey,
+              color: Color(0xFF8A94A6), // Updated color
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -501,7 +509,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             padding: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: Colors.grey.shade200),
+                bottom: BorderSide(color: const Color(0xFF1A1A2E).withOpacity(0.5)), // Updated color
               ),
             ),
             child: Text(
@@ -509,7 +517,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Colors.grey,
+                color: Color(0xFF8A94A6), // Updated color
               ),
             ),
           ),
@@ -528,7 +536,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             'Date of birth',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey,
+              color: Color(0xFF8A94A6), // Updated color
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -540,7 +548,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
                 border: Border(
-                  bottom: BorderSide(color: Colors.grey.shade300),
+                  bottom: BorderSide(color: const Color(0xFF1A1A2E)), // Updated color
                 ),
               ),
               child: Row(
@@ -553,7 +561,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: _selectedDate != null ? Colors.black87 : Colors.grey,
+                      color: _selectedDate != null ? Colors.white : const Color(0xFF8A94A6), // Updated colors
                     ),
                   ),
                   const Icon(
@@ -606,44 +614,70 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _buildBottomNavigation() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: Colors.grey.shade200),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildNavItem(Icons.explore, 'Explore', false),
-          _buildNavItem(Icons.favorite_border, 'Trips', false),
-          _buildNavItem(Icons.person, 'Profile', true),
-        ],
-      ),
+    return BottomNavigationBar(
+      backgroundColor: const Color(0xFF0A0A1A),
+      selectedItemColor: const Color(0xFF4ECDC4),
+      unselectedItemColor: const Color(0xFF8A94A6),
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.wallet), label: 'Wallet'),
+        BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: 'Stats'),
+        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+      ],
+      currentIndex: _currentIndex,
+      onTap: (index) {
+        if (index == _currentIndex) return; // Don't navigate if already on current screen
+        
+        setState(() {
+          _currentIndex = index;
+        });
+        
+        switch (index) {
+          case 0:
+            // Navigate back to wallet screen (main screen)
+            Navigator.of(context).popUntil((route) => route.isFirst);
+            break;
+          case 1:
+            // Navigate to stats screen
+            // First pop current screen, then push stats
+            Navigator.of(context).pop();
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => StatsScreen(currencies: _getMockCurrencies()),
+              ),
+            );
+            break;
+          case 2:
+            // Already on profile screen
+            break;
+        }
+      },
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, bool isActive) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          color: isActive ? const Color(0xFF4ECDC4) : Colors.grey,
-          size: 24,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: isActive ? const Color(0xFF4ECDC4) : Colors.grey,
-            fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-          ),
-        ),
-      ],
-    );
+  // Mock currencies for stats screen (you can replace this with actual data)
+  List<Currency> _getMockCurrencies() {
+    return [
+      Currency(
+        code: 'USD',
+        name: 'US Dollar',
+        rate: 1.0,
+        amount: 1.0,
+        percentChange: 0.0,
+        ratePerUsd: 1.0,
+        color: Colors.green,
+      ),
+      Currency(
+        code: 'EUR',
+        name: 'Euro',
+        rate: 0.85,
+        amount: 0.85,
+        percentChange: 1.2,
+        ratePerUsd: 0.85,
+        color: Colors.blue,
+      ),
+      // Add more mock currencies as needed
+    ];
   }
 
   void _toggleFieldEdit(String field) {
@@ -718,7 +752,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: const Color(0xFFEF4444), // Updated color
           ),
         );
       }
@@ -753,12 +787,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
+            colorScheme: const ColorScheme.dark( // Updated to dark theme
               primary: Color(0xFF4ECDC4),
               onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.black,
+              surface: Color(0xFF0F0F23),
+              onSurface: Colors.white,
             ),
+            dialogBackgroundColor: const Color(0xFF0F0F23), // Updated background
           ),
           child: child!,
         );
@@ -850,7 +885,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: const Color(0xFFEF4444), // Updated color
           ),
         );
       }

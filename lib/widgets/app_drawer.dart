@@ -11,6 +11,7 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
+      backgroundColor: const Color(0xFF0F0F23), // Dark drawer background
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
@@ -19,7 +20,7 @@ class AppDrawer extends StatelessWidget {
               return DrawerHeader(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFF3C4858), Color(0xFF2D3A4B)],
+                    colors: [Color.fromARGB(255, 10, 108, 236), Color(0xFF44A08D)], // Updated gradient
                   ),
                 ),
                 child: Column(
@@ -48,29 +49,29 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.home, color: Color(0xFF3C4858)),
-            title: const Text('Home'),
+            leading: const Icon(Icons.home, color: Color.fromARGB(255, 10, 108, 236)), // Updated icon color
+            title: const Text('Home', style: TextStyle(color: Colors.white)), // Updated text color
             onTap: () {
               Navigator.pop(context);
             },
           ),
           ListTile(
-            leading: const Icon(Icons.account_balance_wallet, color: Color(0xFF3C4858)),
-            title: const Text('Portfolio'),
+            leading: const Icon(Icons.account_balance_wallet, color: Color.fromARGB(255, 10, 108, 236)),
+            title: const Text('Portfolio', style: TextStyle(color: Colors.white)),
             onTap: () {
               Navigator.pop(context);
             },
           ),
           ListTile(
-            leading: const Icon(Icons.notifications, color: Color(0xFF3C4858)),
-            title: const Text('Alerts'),
+            leading: const Icon(Icons.notifications, color: Color.fromARGB(255, 10, 108, 236)),
+            title: const Text('Alerts', style: TextStyle(color: Colors.white)),
             onTap: () {
               Navigator.pop(context);
             },
           ),
           ListTile(
-            leading: const Icon(Icons.settings, color: Color(0xFF3C4858)),
-            title: const Text('Settings'),
+            leading: const Icon(Icons.settings, color: Color.fromARGB(255, 10, 108, 236)),
+            title: const Text('Settings', style: TextStyle(color: Colors.white)),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -82,8 +83,8 @@ class AppDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.person, color: Color(0xFF3C4858)),
-            title: const Text('Profile'),
+            leading: const Icon(Icons.person, color: Color.fromARGB(255, 10, 108, 236)),
+            title: const Text('Profile', style: TextStyle(color: Colors.white)),
             onTap: () {
               Navigator.pop(context);
               _showProfileDialog(context);
@@ -105,7 +106,6 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  // New method to build profile avatar with image support
   Widget _buildProfileAvatar(AuthProvider authProvider, double radius) {
     final profileImageBase64 = authProvider.userData?['profileImageBase64'];
     
@@ -140,13 +140,13 @@ class AppDrawer extends StatelessWidget {
               style: TextStyle(
                 fontSize: radius * 0.8,
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF3C4858),
+                color: const Color.fromARGB(255, 10, 108, 236),
               ),
             )
           : Icon(
               Icons.person, 
               size: radius * 1.2, 
-              color: const Color(0xFF3C4858)
+              color: const Color.fromARGB(255, 10, 108, 236)
             ),
     );
   }
@@ -157,6 +157,7 @@ class AppDrawer extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF0F0F23), // Dark dialog background
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(15),
         ),
@@ -167,7 +168,7 @@ class AppDrawer extends StatelessWidget {
             const Text(
               'User Profile',
               style: TextStyle(
-                color: Color(0xFF3C4858),
+                color: Colors.white, // Updated text color
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -205,7 +206,7 @@ class AppDrawer extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
             child: const Text(
               'Close',
-              style: TextStyle(color: Color(0xFF3C4858)),
+              style: TextStyle(color: Color(0xFF8A94A6)), // Updated text color
             ),
           ),
           TextButton(
@@ -220,7 +221,7 @@ class AppDrawer extends StatelessWidget {
             },
             child: const Text(
               'Edit Profile',
-              style: TextStyle(color: Color(0xFF3C4858)),
+              style: TextStyle(color: Color.fromARGB(255, 10, 108, 236)), // Updated text color
             ),
           ),
         ],
@@ -237,7 +238,7 @@ class AppDrawer extends StatelessWidget {
           child: Text(
             '$label:',
             style: const TextStyle(
-              color: Colors.grey,
+              color: Color(0xFF8A94A6), // Updated text color
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -247,7 +248,7 @@ class AppDrawer extends StatelessWidget {
           child: Text(
             value,
             style: const TextStyle(
-              color: Color(0xFF3C4858),
+              color: Colors.white, // Updated text color
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
@@ -261,6 +262,7 @@ class AppDrawer extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF0F0F23), // Dark dialog background
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(15),
         ),
@@ -291,7 +293,7 @@ class AppDrawer extends StatelessWidget {
         content: const Text(
           'Are you sure you want to logout from your account?',
           style: TextStyle(
-            color: Colors.grey,
+            color: Color(0xFF8A94A6), // Updated text color
             fontSize: 16,
           ),
         ),
@@ -300,7 +302,7 @@ class AppDrawer extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
             child: const Text(
               'Cancel',
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: Color(0xFF8A94A6)), // Updated text color
             ),
           ),
           Consumer<AuthProvider>(
@@ -312,12 +314,11 @@ class AppDrawer extends StatelessWidget {
                         Navigator.pop(context);
                         await authProvider.logoutUser();
                         
-                        // Show success message
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Logged out successfully!'),
-                              backgroundColor: Colors.green,
+                              backgroundColor: Color.fromARGB(255, 10, 108, 236), // Updated color
                               duration: Duration(seconds: 2),
                             ),
                           );

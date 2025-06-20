@@ -1,7 +1,6 @@
 import 'package:currency_converter/auth/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import 'register.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -20,7 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF111827),
+      backgroundColor: const Color(0xFF0A0A1A), // Dark theme background
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
@@ -28,20 +27,13 @@ class _LoginScreenState extends State<LoginScreen> {
             key: _formKey,
             child: Column(
               children: [
-                // Status Bar Mockup
-              
-                
-                // Decorative Elements and Content
                 Stack(
                   children: [
-                    // Decorative curved elements
                     Positioned(
                       top: -80,
                       right: -40,
                       child: _buildDecorativeElements(),
                     ),
-                    
-                    // Main Content
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -65,8 +57,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
- 
-
   Widget _buildDecorativeElements() {
     return SizedBox(
       width: 160,
@@ -76,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Container(
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF2E7D32), Color(0xFF1565C0)], // Your app colors
+                colors: [Color.fromARGB(255, 10, 108, 236), Color(0xFF44A08D)], // Updated gradient
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -92,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Container(
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF1565C0), Color(0xFF2E7D32)],
+                  colors: [Color(0xFF44A08D), Color.fromARGB(255, 10, 108, 236)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -109,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Container(
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF2E7D32), Color(0xFF1565C0)],
+                  colors: [Color.fromARGB(255, 10, 108, 236), Color(0xFF44A08D)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -139,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
           'Login to access your personalized\ncurrency conversion experience.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Color(0xFF9CA3AF),
+            color: Color(0xFF8A94A6), // Updated text color
             fontSize: 14,
             height: 1.5,
           ),
@@ -188,9 +178,9 @@ class _LoginScreenState extends State<LoginScreen> {
             // Email Field
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF1F2937),
+                color: const Color(0xFF0F0F23), // Dark card background
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF374151)),
+                border: Border.all(color: const Color(0xFF1A1A2E)), // Dark border
               ),
               child: TextFormField(
                 controller: _emailController,
@@ -207,8 +197,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
                 decoration: const InputDecoration(
                   hintText: 'Enter Email',
-                  hintStyle: TextStyle(color: Color(0xFF9CA3AF)),
-                  prefixIcon: Icon(Icons.mail_outline, color: Color(0xFF9CA3AF)),
+                  hintStyle: TextStyle(color: Color(0xFF8A94A6)),
+                  prefixIcon: Icon(Icons.mail_outline, color: Color(0xFF8A94A6)),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   errorStyle: TextStyle(color: Color(0xFFEF4444)),
@@ -220,9 +210,9 @@ class _LoginScreenState extends State<LoginScreen> {
             // Password Field
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF1F2937),
+                color: const Color(0xFF0F0F23),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF374151)),
+                border: Border.all(color: const Color(0xFF1A1A2E)),
               ),
               child: TextFormField(
                 controller: _passwordController,
@@ -239,12 +229,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
                 decoration: InputDecoration(
                   hintText: 'Password',
-                  hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
-                  prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF9CA3AF)),
+                  hintStyle: const TextStyle(color: Color(0xFF8A94A6)),
+                  prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF8A94A6)),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                      color: const Color(0xFF9CA3AF),
+                      color: const Color(0xFF8A94A6),
                     ),
                     onPressed: () {
                       setState(() {
@@ -268,7 +258,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: const Text(
                   'Forgot Password?',
                   style: TextStyle(
-                    color: Color(0xFF9CA3AF),
+                    color: Color(0xFF8A94A6),
                     fontSize: 14,
                   ),
                 ),
@@ -282,14 +272,14 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 48,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF2E7D32), Color(0xFF1565C0)], // Your app colors
+                  colors: [Color.fromARGB(255, 10, 108, 236), Color(0xFF44A08D)], // Updated gradient
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 ),
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF2E7D32).withOpacity(0.3),
+                    color: const Color.fromARGB(255, 10, 108, 236).withOpacity(0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -335,7 +325,7 @@ class _LoginScreenState extends State<LoginScreen> {
         const Text(
           'Or continue with',
           style: TextStyle(
-            color: Color(0xFF9CA3AF),
+            color: Color(0xFF8A94A6),
             fontSize: 14,
           ),
         ),
@@ -346,16 +336,16 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Container(
                 height: 48,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1F2937),
+                  color: const Color(0xFF0F0F23),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF374151)),
+                  border: Border.all(color: const Color(0xFF1A1A2E)),
                 ),
                 child: ElevatedButton.icon(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Google sign-in coming soon!'),
-                        backgroundColor: Color(0xFF2E7D32),
+                        backgroundColor: Color.fromARGB(255, 10, 108, 236),
                       ),
                     );
                   },
@@ -379,16 +369,16 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Container(
                 height: 48,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1F2937),
+                  color: const Color(0xFF0F0F23),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF374151)),
+                  border: Border.all(color: const Color(0xFF1A1A2E)),
                 ),
                 child: ElevatedButton.icon(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Facebook sign-in coming soon!'),
-                        backgroundColor: Color(0xFF2E7D32),
+                        backgroundColor: Color.fromARGB(255, 10, 108, 236),
                       ),
                     );
                   },
@@ -424,12 +414,12 @@ class _LoginScreenState extends State<LoginScreen> {
       child: RichText(
         text: const TextSpan(
           text: 'Don\'t have an account? ',
-          style: TextStyle(color: Color(0xFF9CA3AF)),
+          style: TextStyle(color: Color(0xFF8A94A6)),
           children: [
             TextSpan(
               text: 'Sign Up',
               style: TextStyle(
-                color: Color(0xFF2E7D32),
+                color: Color.fromARGB(255, 10, 108, 236),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -452,10 +442,9 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Login successful! Welcome to Currency Converter!'),
-            backgroundColor: Color(0xFF2E7D32),
+            backgroundColor: Color.fromARGB(255, 10, 108, 236),
           ),
         );
-        // Navigation will be handled automatically by AppInitializer
       }
     }
   }
@@ -466,7 +455,7 @@ class _LoginScreenState extends State<LoginScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1F2937),
+        backgroundColor: const Color(0xFF0F0F23),
         title: const Text(
           'Reset Password',
           style: TextStyle(color: Colors.white),
@@ -476,12 +465,12 @@ class _LoginScreenState extends State<LoginScreen> {
           style: const TextStyle(color: Colors.white),
           decoration: const InputDecoration(
             hintText: 'Enter your email',
-            hintStyle: TextStyle(color: Color(0xFF9CA3AF)),
+            hintStyle: TextStyle(color: Color(0xFF8A94A6)),
             enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: Color(0xFF374151)),
+              borderSide: BorderSide(color: Color(0xFF1A1A2E)),
             ),
             focusedBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: Color(0xFF2E7D32)),
+              borderSide: BorderSide(color: Color.fromARGB(255, 10, 108, 236)),
             ),
           ),
         ),
@@ -490,7 +479,7 @@ class _LoginScreenState extends State<LoginScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text(
               'Cancel',
-              style: TextStyle(color: Color(0xFF9CA3AF)),
+              style: TextStyle(color: Color(0xFF8A94A6)),
             ),
           ),
           TextButton(
@@ -504,7 +493,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(success ? 'Password reset email sent!' : authProvider.errorMessage),
-                      backgroundColor: success ? const Color(0xFF2E7D32) : const Color(0xFFEF4444),
+                      backgroundColor: success ? const Color.fromARGB(255, 10, 108, 236) : const Color(0xFFEF4444),
                     ),
                   );
                 }
@@ -512,7 +501,7 @@ class _LoginScreenState extends State<LoginScreen> {
             },
             child: const Text(
               'Send',
-              style: TextStyle(color: Color(0xFF2E7D32)),
+              style: TextStyle(color: Color.fromARGB(255, 10, 108, 236)),
             ),
           ),
         ],

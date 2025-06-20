@@ -22,7 +22,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF111827),
+      backgroundColor: const Color(0xFF0A0A1A), // Dark theme background
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
@@ -30,17 +30,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
             key: _formKey,
             child: Column(
               children: [
-                // Decorative Elements and Content
                 Stack(
                   children: [
-                    // Decorative curved elements
                     Positioned(
                       top: -20,
                       right: -40,
                       child: _buildDecorativeElements(),
                     ),
-                    
-                    // Main Content
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -73,7 +69,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Container(
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF2E7D32), Color(0xFF1565C0)],
+                colors: [Color.fromARGB(255, 10, 108, 236), Color(0xFF44A08D)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -89,7 +85,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Container(
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF1565C0), Color(0xFF2E7D32)],
+                  colors: [Color(0xFF44A08D), Color.fromARGB(255, 10, 108, 236)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -106,7 +102,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Container(
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF2E7D32), Color(0xFF1565C0)],
+                  colors: [Color.fromARGB(255, 10, 108, 236), Color(0xFF44A08D)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -136,7 +132,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           'Create your account to access\npersonalized currency features.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Color(0xFF9CA3AF),
+            color: Color(0xFF8A94A6),
             fontSize: 14,
             height: 1.5,
           ),
@@ -185,9 +181,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             // Name Field
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF1F2937),
+                color: const Color(0xFF0F0F23),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF374151)),
+                border: Border.all(color: const Color(0xFF1A1A2E)),
               ),
               child: TextFormField(
                 controller: _nameController,
@@ -203,8 +199,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 },
                 decoration: const InputDecoration(
                   hintText: 'Full Name',
-                  hintStyle: TextStyle(color: Color(0xFF9CA3AF)),
-                  prefixIcon: Icon(Icons.person_outline, color: Color(0xFF9CA3AF)),
+                  hintStyle: TextStyle(color: Color(0xFF8A94A6)),
+                  prefixIcon: Icon(Icons.person_outline, color: Color(0xFF8A94A6)),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   errorStyle: TextStyle(color: Color(0xFFEF4444)),
@@ -216,9 +212,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             // Email Field
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF1F2937),
+                color: const Color(0xFF0F0F23),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF374151)),
+                border: Border.all(color: const Color(0xFF1A1A2E)),
               ),
               child: TextFormField(
                 controller: _emailController,
@@ -235,8 +231,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 },
                 decoration: const InputDecoration(
                   hintText: 'Enter Email',
-                  hintStyle: TextStyle(color: Color(0xFF9CA3AF)),
-                  prefixIcon: Icon(Icons.mail_outline, color: Color(0xFF9CA3AF)),
+                  hintStyle: TextStyle(color: Color(0xFF8A94A6)),
+                  prefixIcon: Icon(Icons.mail_outline, color: Color(0xFF8A94A6)),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   errorStyle: TextStyle(color: Color(0xFFEF4444)),
@@ -248,9 +244,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             // Password Field
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF1F2937),
+                color: const Color(0xFF0F0F23),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF374151)),
+                border: Border.all(color: const Color(0xFF1A1A2E)),
               ),
               child: TextFormField(
                 controller: _passwordController,
@@ -267,12 +263,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 },
                 decoration: InputDecoration(
                   hintText: 'Password',
-                  hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
-                  prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF9CA3AF)),
+                  hintStyle: const TextStyle(color: Color(0xFF8A94A6)),
+                  prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF8A94A6)),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                      color: const Color(0xFF9CA3AF),
+                      color: const Color(0xFF8A94A6),
                     ),
                     onPressed: () {
                       setState(() {
@@ -291,9 +287,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             // Confirm Password Field
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF1F2937),
+                color: const Color(0xFF0F0F23),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF374151)),
+                border: Border.all(color: const Color(0xFF1A1A2E)),
               ),
               child: TextFormField(
                 controller: _confirmPasswordController,
@@ -310,12 +306,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 },
                 decoration: InputDecoration(
                   hintText: 'Confirm Password',
-                  hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
-                  prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF9CA3AF)),
+                  hintStyle: const TextStyle(color: Color(0xFF8A94A6)),
+                  prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF8A94A6)),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                      color: const Color(0xFF9CA3AF),
+                      color: const Color(0xFF8A94A6),
                     ),
                     onPressed: () {
                       setState(() {
@@ -337,14 +333,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
               height: 48,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF2E7D32), Color(0xFF1565C0)],
+                  colors: [Color.fromARGB(255, 10, 108, 236), Color(0xFF44A08D)],
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 ),
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF2E7D32).withOpacity(0.3),
+                    color: const Color.fromARGB(255, 10, 108, 236).withOpacity(0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -390,7 +386,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         const Text(
           'Or continue with',
           style: TextStyle(
-            color: Color(0xFF9CA3AF),
+            color: Color(0xFF8A94A6),
             fontSize: 14,
           ),
         ),
@@ -401,16 +397,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: Container(
                 height: 48,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1F2937),
+                  color: const Color(0xFF0F0F23),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF374151)),
+                  border: Border.all(color: const Color(0xFF1A1A2E)),
                 ),
                 child: ElevatedButton.icon(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Google sign-in coming soon!'),
-                        backgroundColor: Color(0xFF2E7D32),
+                        backgroundColor: Color.fromARGB(255, 10, 108, 236),
                       ),
                     );
                   },
@@ -434,16 +430,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: Container(
                 height: 48,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1F2937),
+                  color: const Color(0xFF0F0F23),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF374151)),
+                  border: Border.all(color: const Color(0xFF1A1A2E)),
                 ),
                 child: ElevatedButton.icon(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Facebook sign-in coming soon!'),
-                        backgroundColor: Color(0xFF2E7D32),
+                        backgroundColor: Color.fromARGB(255, 10, 108, 236),
                       ),
                     );
                   },
@@ -476,12 +472,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       child: RichText(
         text: const TextSpan(
           text: 'Already have an account? ',
-          style: TextStyle(color: Color(0xFF9CA3AF)),
+          style: TextStyle(color: Color(0xFF8A94A6)),
           children: [
             TextSpan(
               text: 'Login',
               style: TextStyle(
-                color: Color(0xFF2E7D32),
+                color: Color.fromARGB(255, 10, 108, 236),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -491,7 +487,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // FIXED: Updated _handleRegister method with proper navigation
   void _handleRegister() async {
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -503,20 +498,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (success && mounted) {
-        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Account created successfully! 🎉'),
-            backgroundColor: Color(0xFF2E7D32),
+            backgroundColor: Color.fromARGB(255, 10, 108, 236),
             duration: Duration(seconds: 2),
           ),
         );
 
-        // Wait a moment for the success message to show
         await Future.delayed(const Duration(milliseconds: 500));
 
         if (mounted) {
-          // Navigate to Profile Completion Screen
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
