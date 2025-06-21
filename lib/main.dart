@@ -99,7 +99,7 @@ class _AppInitializerState extends State<AppInitializer> {
         // Show loading screen while checking auth state
         if (authProvider.isLoading) {
           return const Scaffold(
-            backgroundColor: Color(0xFF2E7D32),
+            backgroundColor: Color.fromARGB(255, 7, 90, 216),
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
