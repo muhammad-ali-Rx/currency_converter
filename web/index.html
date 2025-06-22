@@ -1,38 +1,129 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
-
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Currency Converter App">
 
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="currency_converter">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>currency_converter</title>
+  <title>Currency Converter</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #0A0A1A;
+    }
+    
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #0A0A1A;
+    }
+    
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #1A1A2E;
+      border-top: 4px solid #4ECDC4;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <div id="loading" class="loading">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- SIMPLIFIED GOOGLE SIGN-IN SETUP -->
+  <script>
+    // Set global config BEFORE loading any Google scripts
+    window.googleSignInConfig = {
+      client_id: '947979021795-l82ch0gmiosdpbob2166o3sfpq3keuuj.apps.googleusercontent.com'
+    };
+    
+    // Simple flag
+    window.googleSignInInitialized = false;
+  </script>
+
+  <!-- Load Google Platform Library SYNCHRONOUSLY -->
+  <script src="https://apis.google.com/js/platform.js"></script>
+  
+  <!-- Initialize immediately after platform loads -->
+  <script>
+    function initGoogleSignIn() {
+      console.log('Starting Google Sign-In initialization...');
+      
+      if (typeof gapi === 'undefined') {
+        console.error('GAPI not loaded!');
+        return;
+      }
+      
+      gapi.load('auth2', function() {
+        console.log('Auth2 module loaded, initializing...');
+        
+        gapi.auth2.init({
+          client_id: '947979021795-l82ch0gmiosdpbob2166o3sfpq3keuuj.apps.googleusercontent.com'
+        }).then(function(authInstance) {
+          console.log('✅ Google Sign-In initialized successfully!');
+          window.googleSignInInitialized = true;
+          window.googleAuthInstance = authInstance;
+        }).catch(function(error) {
+          console.error('❌ Google Sign-In initialization failed:', error);
+        });
+      });
+    }
+    
+    // Initialize immediately
+    initGoogleSignIn();
+    
+    // Backup initialization
+    setTimeout(initGoogleSignIn, 1000);
+    setTimeout(initGoogleSignIn, 3000);
+  </script>
+
+  <script>
+    const serviceWorkerVersion = null;
+  </script>
+  
+  <script src="flutter.js" defer></script>
+  
+  <script>
+    window.addEventListener('load', function(ev) {
+      // Hide loading spinner
+      const loadingElement = document.getElementById('loading');
+      if (loadingElement) {
+        loadingElement.style.display = 'none';
+      }
+      
+      // Initialize Flutter
+      _flutter.loader.loadEntrypoint({
+        serviceWorker: {
+          serviceWorkerVersion: serviceWorkerVersion,
+        },
+        onEntrypointLoaded: function(engineInitializer) {
+          engineInitializer.initializeEngine().then(function(appRunner) {
+            appRunner.runApp();
+          });
+        }
+      });
+    });
+  </script>
 </body>
 </html>

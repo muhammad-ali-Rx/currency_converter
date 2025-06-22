@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart' as launcher;
+import 'package:url_launcher/url_launcher.dart';
 
 class HelpSupportScreen extends StatefulWidget {
   const HelpSupportScreen({super.key});
@@ -15,6 +15,12 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  bool _isSubmitting = false;
+  String _selectedSubject = 'general';
+
+  // Your email configuration
+  static const String supportEmail = 'alimuhammadali8753@gmail.com';
 
   @override
   void initState() {
@@ -103,6 +109,14 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
       {
         'question': 'Can I export my rate alert history?',
         'answer': 'Yes, go to Rate Alerts > History > Export. You can export your data in CSV or PDF format for your records.',
+      },
+      {
+        'question': 'What currencies are supported?',
+        'answer': 'We support over 170+ currencies including all major world currencies like USD, EUR, GBP, JPY, PKR, INR, and many more. The list is regularly updated.',
+      },
+      {
+        'question': 'How often are rates updated?',
+        'answer': 'Exchange rates are updated every 60 seconds during market hours. We fetch data from multiple reliable sources to ensure accuracy.',
       },
     ];
 
@@ -217,6 +231,32 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
           'Export portfolio reports',
         ],
       },
+      {
+        'title': 'Advanced Features',
+        'description': 'Make the most of advanced app features',
+        'icon': Icons.settings,
+        'steps': [
+          'Set up multiple watchlists',
+          'Use historical rate charts',
+          'Configure custom alert sounds',
+          'Set up email notifications',
+          'Use dark/light theme options',
+          'Export data for analysis',
+        ],
+      },
+      {
+        'title': 'Troubleshooting',
+        'description': 'Common issues and their solutions',
+        'icon': Icons.build,
+        'steps': [
+          'Check your internet connection',
+          'Update the app to latest version',
+          'Clear app cache if needed',
+          'Restart the app',
+          'Check notification permissions',
+          'Contact support if issue persists',
+        ],
+      },
     ];
 
     return ListView.builder(
@@ -317,27 +357,27 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
           _buildContactMethod(
             icon: Icons.email,
             title: 'Email Support',
-            subtitle: 'alimuhammadali8753@gmail.com',
+            subtitle: supportEmail,
             description: 'Get detailed help via email',
-            onTap: () => _launchEmail(),
+            onTap: () => _launchDirectEmail(),
           ),
           const SizedBox(height: 16),
           
           _buildContactMethod(
             icon: Icons.phone,
             title: 'Phone Support',
-            subtitle: '+1 (555) 123-4567',
-            description: 'Mon-Fri, 9 AM - 6 PM EST',
+            subtitle: '+92 300 1234567',
+            description: 'Mon-Fri, 9 AM - 6 PM PKT',
             onTap: () => _launchPhone(),
           ),
           const SizedBox(height: 16),
           
           _buildContactMethod(
             icon: Icons.chat,
-            title: 'Live Chat',
-            subtitle: 'Available 24/7',
-            description: 'Instant help from our team',
-            onTap: () => _launchChat(),
+            title: 'WhatsApp',
+            subtitle: 'Quick Response',
+            description: 'Message us on WhatsApp',
+            onTap: () => _launchWhatsApp(),
           ),
           const SizedBox(height: 16),
           
@@ -351,7 +391,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
           
           const SizedBox(height: 32),
           
-          // Contact Form
+          // Enhanced Contact Form
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -372,8 +412,16 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Fill out the form below and we\'ll get back to you within 24 hours.',
+                  style: TextStyle(
+                    color: Color(0xFF8A94A6),
+                    fontSize: 14,
+                  ),
+                ),
                 const SizedBox(height: 16),
-                _buildContactForm(),
+                _buildEnhancedContactForm(),
               ],
             ),
           ),
@@ -429,7 +477,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
           
           _buildInfoSection(
             'About the App',
-            'Currency Converter is your comprehensive solution for real-time currency exchange rates, smart alerts, and portfolio tracking. Built with precision and user experience in mind.',
+            'Currency Converter is your comprehensive solution for real-time currency exchange rates, smart alerts, and portfolio tracking. Built with precision and user experience in mind, our app helps you stay updated with the latest currency trends and make informed financial decisions.',
           ),
           
           _buildInfoSection(
@@ -440,17 +488,25 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
             '• Push notifications and email alerts\n'
             '• Dark theme and intuitive interface\n'
             '• Offline rate caching\n'
-            '• Export capabilities for data analysis',
+            '• Export capabilities for data analysis\n'
+            '• Support for 170+ currencies\n'
+            '• Historical rate charts\n'
+            '• Multiple watchlists',
           ),
           
           _buildInfoSection(
             'Privacy & Security',
-            'We take your privacy seriously. All data is encrypted and we follow industry-standard security practices. We don\'t share your personal information with third parties.',
+            'We take your privacy seriously. All data is encrypted using industry-standard protocols and we follow strict security practices. We don\'t share your personal information with third parties and all financial data is processed securely.',
           ),
           
           _buildInfoSection(
             'Terms & Conditions',
-            'By using this app, you agree to our terms of service and privacy policy. Exchange rates are for informational purposes only.',
+            'By using this app, you agree to our terms of service and privacy policy. Exchange rates are for informational purposes only and actual rates may vary. Please consult with financial advisors for investment decisions.',
+          ),
+          
+          _buildInfoSection(
+            'Data Sources',
+            'Our exchange rates are sourced from multiple reliable financial data providers including central banks, financial institutions, and market data vendors to ensure accuracy and reliability.',
           ),
           
           const SizedBox(height: 24),
@@ -461,16 +517,281 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
             decoration: BoxDecoration(
               color: const Color(0xFF1A1A2E),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color.fromARGB(255, 10, 108, 236).withOpacity(0.3),
+              ),
             ),
             child: Column(
               children: [
                 _buildAppInfoRow('Version', '2.1.0'),
                 _buildAppInfoRow('Build', '2024.01.15'),
                 _buildAppInfoRow('Size', '25.4 MB'),
-                _buildAppInfoRow('Developer', 'Currency Solutions Inc.'),
-                _buildAppInfoRow('Support', 'alimuhammadali8753@gmail.com'),
+                _buildAppInfoRow('Developer', 'Ali Muhammad'),
+                _buildAppInfoRow('Support', supportEmail),
+                _buildAppInfoRow('Last Updated', 'January 2024'),
+                _buildAppInfoRow('Compatibility', 'Android 6.0+'),
               ],
             ),
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Social Links
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A2E),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color.fromARGB(255, 10, 108, 236).withOpacity(0.3),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Connect With Us',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildSocialButton(Icons.email, 'Email', () => _launchDirectEmail()),
+                    _buildSocialButton(Icons.phone, 'Call', () => _launchPhone()),
+                    _buildSocialButton(Icons.chat, 'WhatsApp', () => _launchWhatsApp()),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSocialButton(IconData icon, String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 10, 108, 236).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: const Color.fromARGB(255, 10, 108, 236)),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Color.fromARGB(255, 10, 108, 236),
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEnhancedContactForm() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          // Name Field
+          TextFormField(
+            controller: _nameController,
+            style: const TextStyle(color: Colors.white),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Please enter your name';
+              }
+              return null;
+            },
+            decoration: InputDecoration(
+              labelText: 'Your Name *',
+              labelStyle: const TextStyle(color: Color(0xFF8A94A6)),
+              prefixIcon: const Icon(Icons.person, color: Color(0xFF8A94A6)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFF8A94A6)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color.fromARGB(255, 10, 108, 236)),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.red),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Email Field
+          TextFormField(
+            controller: _emailController,
+            style: const TextStyle(color: Colors.white),
+            keyboardType: TextInputType.emailAddress,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Please enter your email';
+              }
+              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                return 'Please enter a valid email';
+              }
+              return null;
+            },
+            decoration: InputDecoration(
+              labelText: 'Email Address *',
+              labelStyle: const TextStyle(color: Color(0xFF8A94A6)),
+              prefixIcon: const Icon(Icons.email, color: Color(0xFF8A94A6)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFF8A94A6)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color.fromARGB(255, 10, 108, 236)),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.red),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Subject Field
+          DropdownButtonFormField<String>(
+            value: _selectedSubject,
+            style: const TextStyle(color: Colors.white),
+            dropdownColor: const Color(0xFF1A1A2E),
+            decoration: InputDecoration(
+              labelText: 'Subject',
+              labelStyle: const TextStyle(color: Color(0xFF8A94A6)),
+              prefixIcon: const Icon(Icons.subject, color: Color(0xFF8A94A6)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFF8A94A6)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color.fromARGB(255, 10, 108, 236)),
+              ),
+            ),
+            items: const [
+              DropdownMenuItem(value: 'general', child: Text('General Inquiry')),
+              DropdownMenuItem(value: 'bug', child: Text('Bug Report')),
+              DropdownMenuItem(value: 'feature', child: Text('Feature Request')),
+              DropdownMenuItem(value: 'account', child: Text('Account Issue')),
+              DropdownMenuItem(value: 'rates', child: Text('Rate Alert Issue')),
+              DropdownMenuItem(value: 'other', child: Text('Other')),
+            ],
+            onChanged: (value) {
+              setState(() {
+                _selectedSubject = value!;
+              });
+            },
+          ),
+          const SizedBox(height: 16),
+          
+          // Message Field
+          TextFormField(
+            controller: _messageController,
+            style: const TextStyle(color: Colors.white),
+            maxLines: 4,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Please enter your message';
+              }
+              if (value.trim().length < 10) {
+                return 'Message should be at least 10 characters';
+              }
+              return null;
+            },
+            decoration: InputDecoration(
+              labelText: 'Your Message *',
+              labelStyle: const TextStyle(color: Color(0xFF8A94A6)),
+              prefixIcon: const Icon(Icons.message, color: Color(0xFF8A94A6)),
+              alignLabelWithHint: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFF8A94A6)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color.fromARGB(255, 10, 108, 236)),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.red),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          
+          // Submit Button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isSubmitting ? null : _submitContactForm,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromARGB(255, 10, 108, 236),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 2,
+              ),
+              child: _isSubmitting
+                  ? const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Text('Sending...'),
+                      ],
+                    )
+                  : const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.send),
+                        SizedBox(width: 8),
+                        Text(
+                          'Send Message',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          
+          // Alternative contact info
+          Text(
+            'Or email us directly at $supportEmail',
+            style: const TextStyle(
+              color: Color(0xFF8A94A6),
+              fontSize: 12,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -555,87 +876,6 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
     );
   }
 
-  Widget _buildContactForm() {
-    return Column(
-      children: [
-        TextField(
-          controller: _nameController,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            labelText: 'Your Name',
-            labelStyle: const TextStyle(color: Color(0xFF8A94A6)),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF8A94A6)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color.fromARGB(255, 10, 108, 236)),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _emailController,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            labelText: 'Email Address',
-            labelStyle: const TextStyle(color: Color(0xFF8A94A6)),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF8A94A6)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color.fromARGB(255, 10, 108, 236)),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _messageController,
-          style: const TextStyle(color: Colors.white),
-          maxLines: 4,
-          decoration: InputDecoration(
-            labelText: 'Your Message',
-            labelStyle: const TextStyle(color: Color(0xFF8A94A6)),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF8A94A6)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color.fromARGB(255, 10, 108, 236)),
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () => _submitContactForm(
-              _nameController.text,
-              _emailController.text,
-              _messageController.text,
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromARGB(255, 10, 108, 236),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text(
-              'Send Message',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildInfoSection(String title, String content) {
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
@@ -714,66 +954,68 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
             ),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              guide['description'] as String,
-              style: const TextStyle(
-                color: Color(0xFF8A94A6),
-                fontSize: 16,
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                guide['description'] as String,
+                style: const TextStyle(
+                  color: Color(0xFF8A94A6),
+                  fontSize: 16,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Steps:',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 16),
+              const Text(
+                'Steps:',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            ...((guide['steps'] as List<String>).asMap().entries.map((entry) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 20,
-                      height: 20,
-                      decoration: const BoxDecoration(
-                        color: Color.fromARGB(255, 10, 108, 236),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '${entry.key + 1}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+              const SizedBox(height: 8),
+              ...((guide['steps'] as List<String>).asMap().entries.map((entry) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 20,
+                        height: 20,
+                        decoration: const BoxDecoration(
+                          color: Color.fromARGB(255, 10, 108, 236),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${entry.key + 1}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        entry.value,
-                        style: const TextStyle(
-                          color: Color(0xFF8A94A6),
-                          fontSize: 14,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          entry.value,
+                          style: const TextStyle(
+                            color: Color(0xFF8A94A6),
+                            fontSize: 14,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList()),
-          ],
+                    ],
+                  ),
+                );
+              }).toList()),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -822,7 +1064,8 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
               '• Detailed description of the issue\n'
               '• Steps to reproduce the problem\n'
               '• Screenshots if applicable\n'
-              '• Your device model and OS version',
+              '• Your device model and OS version\n'
+              '• App version you\'re using',
               style: TextStyle(color: Color(0xFF8A94A6), fontSize: 14),
             ),
           ],
@@ -835,7 +1078,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              _launchEmail(subject: 'Bug Report');
+              _launchDirectEmail(subject: 'Bug Report - Currency Converter App');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color.fromARGB(255, 10, 108, 236),
@@ -847,70 +1090,159 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
     );
   }
 
-  // ✅ Updated: Your email address for receiving contact form submissions
-  Future<void> _launchEmail({String? subject, String? body}) async {
+  // Enhanced email launching
+  Future<void> _launchDirectEmail({String? subject}) async {
     try {
-      final String emailUrl = 'mailto:alimuhammadali8753@gmail.com?subject=${Uri.encodeComponent(subject ?? 'Support Request')}&body=${Uri.encodeComponent(body ?? 'Hello Support Team,\n\n')}';
-      final Uri emailUri = Uri.parse(emailUrl);
+      final Uri emailUri = Uri(
+        scheme: 'mailto',
+        path: supportEmail,
+        query: Uri(queryParameters: {
+          'subject': subject ?? 'Support Request from Currency Converter App',
+        }).query,
+      );
       
-      if (await launcher.canLaunchUrl(emailUri)) {
-        await launcher.launchUrl(emailUri);
+      if (await canLaunchUrl(emailUri)) {
+        await launchUrl(emailUri);
       } else {
-        _showErrorSnackBar('Could not launch email client');
+        await Clipboard.setData(ClipboardData(text: supportEmail));
+        _showSuccessSnackBar('Email address copied to clipboard');
       }
     } catch (e) {
-      _showErrorSnackBar('Error launching email: $e');
+      await Clipboard.setData(ClipboardData(text: supportEmail));
+      _showSuccessSnackBar('Email address copied to clipboard');
     }
   }
 
   Future<void> _launchPhone() async {
     try {
-      const String phoneNumber = 'tel:+15551234567';
+      const String phoneNumber = 'tel:+923001234567';
       final Uri phoneUri = Uri.parse(phoneNumber);
       
-      if (await launcher.canLaunchUrl(phoneUri)) {
-        await launcher.launchUrl(phoneUri);
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
       } else {
-        await Clipboard.setData(const ClipboardData(text: '+1 (555) 123-4567'));
+        await Clipboard.setData(const ClipboardData(text: '+92 300 1234567'));
         _showSuccessSnackBar('Phone number copied to clipboard');
       }
     } catch (e) {
-      await Clipboard.setData(const ClipboardData(text: '+1 (555) 123-4567'));
+      await Clipboard.setData(const ClipboardData(text: '+92 300 1234567'));
       _showSuccessSnackBar('Phone number copied to clipboard');
     }
   }
 
-  void _launchChat() {
-    _showSuccessSnackBar('Opening live chat...');
+  Future<void> _launchWhatsApp() async {
+    try {
+      const String whatsappNumber = '923001234567';
+      final String message = Uri.encodeComponent('Hello! I need help with the Currency Converter app.');
+      final Uri whatsappUri = Uri.parse('https://wa.me/$whatsappNumber?text=$message');
+      
+      if (await canLaunchUrl(whatsappUri)) {
+        await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
+      } else {
+        _showErrorSnackBar('WhatsApp not installed');
+      }
+    } catch (e) {
+      _showErrorSnackBar('Could not open WhatsApp');
+    }
   }
 
-  // ✅ Updated: Contact form now sends to your email
-  void _submitContactForm(String name, String email, String message) {
-    if (name.isEmpty || email.isEmpty || message.isEmpty) {
-      _showErrorSnackBar('Please fill all fields');
+  // Enhanced form submission
+  Future<void> _submitContactForm() async {
+    if (!_formKey.currentState!.validate()) {
       return;
     }
-    
-    // Clear the form fields after submission
-    _nameController.clear();
-    _emailController.clear();
-    _messageController.clear();
-    
-    // Direct email with form data to your email address
-    _launchEmail(
-      subject: 'Contact Form Submission from $name',
-      body: 'Name: $name\nEmail: $email\n\nMessage:\n$message\n\n---\nSent from Currency Converter App',
-    );
-    
-    _showSuccessSnackBar('Message sent successfully! We\'ll get back to you soon.');
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final String name = _nameController.text.trim();
+      final String email = _emailController.text.trim();
+      final String message = _messageController.text.trim();
+      
+      // Get subject text
+      final Map<String, String> subjectMap = {
+        'general': 'General Inquiry',
+        'bug': 'Bug Report',
+        'feature': 'Feature Request',
+        'account': 'Account Issue',
+        'rates': 'Rate Alert Issue',
+        'other': 'Other',
+      };
+      
+      final String subjectText = subjectMap[_selectedSubject] ?? 'General Inquiry';
+      
+      // Create email content
+      final String emailBody = '''
+Contact Form Submission
+
+Name: $name
+Email: $email
+Subject: $subjectText
+Date: ${DateTime.now().toString()}
+
+Message:
+$message
+
+---
+Device Info:
+- App: Currency Converter
+- Version: 2.1.0
+- Platform: ${Theme.of(context).platform.name}
+
+Sent from Currency Converter App Contact Form
+      ''';
+
+      // Launch email with pre-filled content
+      final Uri emailUri = Uri(
+        scheme: 'mailto',
+        path: supportEmail,
+        query: Uri(queryParameters: {
+          'subject': 'Contact Form: $subjectText from $name',
+          'body': emailBody,
+        }).query,
+      );
+
+      if (await canLaunchUrl(emailUri)) {
+        await launchUrl(emailUri);
+        
+        // Clear form after successful submission
+        _nameController.clear();
+        _emailController.clear();
+        _messageController.clear();
+        setState(() {
+          _selectedSubject = 'general';
+        });
+        
+        _showSuccessSnackBar('Email client opened! Please send the email to complete your request.');
+      } else {
+        // Fallback: Copy email content to clipboard
+        await Clipboard.setData(ClipboardData(text: 'To: $supportEmail\n\n$emailBody'));
+        _showSuccessSnackBar('Email content copied to clipboard. Please paste it in your email app.');
+      }
+    } catch (e) {
+      _showErrorSnackBar('Error: ${e.toString()}');
+    } finally {
+      setState(() {
+        _isSubmitting = false;
+      });
+    }
   }
 
   void _showSuccessSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
         backgroundColor: const Color.fromARGB(255, 10, 108, 236),
         behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4),
       ),
     );
   }
@@ -918,9 +1250,16 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Row(
+          children: [
+            const Icon(Icons.error, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4),
       ),
     );
   }

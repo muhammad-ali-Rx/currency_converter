@@ -22,7 +22,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A1A), // Dark theme background
+      backgroundColor: const Color(0xFF0A0A1A),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
@@ -381,86 +381,96 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildSocialButtons() {
-    return Column(
-      children: [
-        const Text(
-          'Or continue with',
-          style: TextStyle(
-            color: Color(0xFF8A94A6),
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        return Column(
           children: [
-            Expanded(
-              child: Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F0F23),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF1A1A2E)),
-                ),
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Google sign-in coming soon!'),
-                        backgroundColor: Color.fromARGB(255, 10, 108, 236),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  icon: const Icon(Icons.g_mobiledata, color: Colors.white, size: 24),
-                  label: const Text(
-                    'Google',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
+            const Text(
+              'Or continue with',
+              style: TextStyle(
+                color: Color(0xFF8A94A6),
+                fontSize: 14,
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F0F23),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF1A1A2E)),
-                ),
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Facebook sign-in coming soon!'),
-                        backgroundColor: Color.fromARGB(255, 10, 108, 236),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                // Google Button
+                Expanded(
+                  child: Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F0F23),
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF1A1A2E)),
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: authProvider.isLoading ? null : _handleGoogleSignIn,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: authProvider.isLoading 
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.g_mobiledata, color: Colors.white, size: 24),
+                      label: const Text(
+                        'Google',
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
                   ),
-                  icon: const Icon(Icons.facebook, color: Colors.white),
-                  label: const Text(
-                    'Facebook',
-                    style: TextStyle(color: Colors.white),
+                ),
+                const SizedBox(width: 16),
+                // Facebook Button
+                Expanded(
+                  child: Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F0F23),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF1A1A2E)),
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: authProvider.isLoading ? null : _handleFacebookSignIn,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: authProvider.isLoading 
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.facebook, color: Colors.white),
+                      label: const Text(
+                        'Facebook',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -516,6 +526,60 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           );
         }
+      }
+    }
+  }
+
+  void _handleGoogleSignIn() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    bool success = await authProvider.signInWithGoogle();
+    
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Google sign-in successful! 🎉'),
+          backgroundColor: Color.fromARGB(255, 10, 108, 236),
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ProfileCompletionScreen()
+          ),
+        );
+      }
+    }
+  }
+
+  void _handleFacebookSignIn() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    bool success = await authProvider.signInWithFacebook();
+    
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Facebook sign-in successful! 🎉'),
+          backgroundColor: Color.fromARGB(255, 10, 108, 236),
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ProfileCompletionScreen()
+          ),
+        );
       }
     }
   }

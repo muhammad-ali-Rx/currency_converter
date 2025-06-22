@@ -1,302 +1,409 @@
 import 'package:currency_converter/auth/auth_provider.dart';
+import 'package:currency_converter/screen/Portfolio_Screen.dart';
 import 'package:currency_converter/screen/edit_profile_screen.dart';
+import 'package:currency_converter/screen/feedback_screen.dart';
 import 'package:currency_converter/screen/help_support.dart';
+import 'package:currency_converter/screen/news_screen.dart';
 import 'package:currency_converter/screen/notic_setting.dart';
 import 'package:currency_converter/screen/rate_alert.dart';
 import 'package:currency_converter/screen/notifications_inbox_screen.dart';
 import 'package:currency_converter/services/Enhanced_Notification.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
 
-class AppDrawer extends StatelessWidget {
-  const AppDrawer({super.key});
+class FixedOverflowDrawer extends StatelessWidget {
+  const FixedOverflowDrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isSmallScreen = screenHeight < 700; // Detect small screens
+    
     return Drawer(
       backgroundColor: const Color(0xFF0F0F23),
-      child: ListView(
-        padding: EdgeInsets.zero,
+      width: MediaQuery.of(context).size.width * 0.75,
+      child: Column(
         children: [
-          Consumer<AuthProvider>(
-            builder: (context, authProvider, child) {
-              return DrawerHeader(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color.fromARGB(255, 10, 108, 236),
-                      Color(0xFF44A08D),
-                    ],
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildProfileAvatar(authProvider, 30),
-                    const SizedBox(height: 10),
-                    Text(
-                      authProvider.userData?['name'] ?? 'User',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      authProvider.userData?['email'] ?? '',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.home,
-              color: Color.fromARGB(255, 10, 108, 236),
-            ),
-            title: const Text(
-              'Home',
-              style: TextStyle(color: Colors.white),
-            ),
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.account_balance_wallet,
-              color: Color.fromARGB(255, 10, 108, 236),
-            ),
-            title: const Text(
-              'Portfolio',
-              style: TextStyle(color: Colors.white),
-            ),
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.trending_up,
-              color: Color.fromARGB(255, 10, 108, 236),
-            ),
-            title: const Text('Rate Alerts', style: TextStyle(color: Colors.white)),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const RateAlertsScreen(),
-                ),
-              );
-            },
-          ),
-          // Notifications Inbox with Badge
-          StreamBuilder<List<dynamic>>(
-            stream: EnhancedNotificationService().notificationStream,
-            builder: (context, snapshot) {
-              final notifications = snapshot.data ?? [];
-              final unreadCount = notifications.where((n) => !n.isRead).length;
-              
-              return ListTile(
-                leading: Stack(
-                  children: [
-                    const Icon(
-                      Icons.notifications,
-                      color: Color.fromARGB(255, 10, 108, 236),
-                    ),
-                    if (unreadCount > 0)
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
-                          ),
-                          child: Text(
-                            unreadCount > 99 ? '99+' : unreadCount.toString(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                title: Row(
-                  children: [
-                    const Text('Notifications', style: TextStyle(color: Colors.white)),
-                    if (unreadCount > 0) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          unreadCount > 99 ? '99+' : unreadCount.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await Future.delayed(const Duration(milliseconds: 100));
-                  if (context.mounted) {
-                    Navigator.push(
+          // Fixed Header - No scroll
+          _buildCompactHeader(context, isSmallScreen),
+          
+          // Scrollable Content
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                children: [
+                  // Main Navigation
+                  _buildCompactSection('Main', [
+                    _buildCompactTile(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => const NotificationsInboxScreen(),
+                      Icons.home_rounded,
+                      'Home',
+                      () => Navigator.pop(context),
+                      Colors.blue,
+                    ),
+                    _buildCompactTile(
+                      context,
+                      Icons.account_balance_wallet_rounded,
+                      'Portfolio',
+                      () => _navigateToScreen(context, 'Portfolio'),
+                      Colors.green,
+                    ),
+                    _buildCompactTile(
+                      context,
+                      Icons.trending_up_rounded,
+                      'Rate Alerts',
+                      () => _navigateToScreen(context, 'RateAlerts'),
+                      Colors.orange,
+                    ),
+                    _buildCompactTile(
+                      context,
+                      Icons.newspaper_rounded,
+                      'Currency News',
+                      () => _navigateToScreen(context, 'News'),
+                      Colors.purple,
+                    ),
+                  ]),
+                  
+                  // Notifications
+                  _buildNotificationTile(context),
+                  
+                  // Account & Settings
+                  _buildCompactSection('Account', [
+                    _buildCompactTile(
+                      context,
+                      Icons.person_rounded,
+                      'Profile',
+                      () => _showProfileDialog(context),
+                      Colors.blue,
+                    ),
+                    _buildCompactTile(
+                      context,
+                      Icons.settings_rounded,
+                      'Settings',
+                      () => _navigateToScreen(context, 'Settings'),
+                      Colors.grey,
+                    ),
+                  ]),
+                  
+                  // Support & Feedback - Hide on very small screens
+                  if (!isSmallScreen)
+                    _buildCompactSection('Support', [
+                      _buildCompactTile(
+                        context,
+                        Icons.help_outline_rounded,
+                        'Help & Support',
+                        () => _navigateToScreen(context, 'Help'),
+                        Colors.cyan,
                       ),
-                    );
-                  }
-                },
-              );
-            },
+                      _buildCompactTile(
+                        context,
+                        Icons.feedback_rounded,
+                        'Send Feedback',
+                        () => _navigateToScreen(context, 'Feedback'),
+                        Colors.amber,
+                      ),
+                    ]),
+                  
+                  // Add some bottom padding for scroll
+                  const SizedBox(height: 100),
+                ],
+              ),
+            ),
           ),
-          ListTile(
-            leading: const Icon(
-              Icons.notifications_active,
-              color: Color.fromARGB(255, 10, 108, 236),
+          
+          // Fixed Footer - No scroll
+          _buildCompactFooter(context, isSmallScreen),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactHeader(BuildContext context, bool isSmallScreen) {
+    final headerHeight = isSmallScreen ? 120.0 : 140.0;
+    
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        return Container(
+          height: headerHeight,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color.fromARGB(255, 10, 108, 236),
+                Color(0xFF44A08D),
+              ],
             ),
-            title: const Text(
-              'Notification Settings',
-              style: TextStyle(color: Colors.white),
-            ),
-            onTap: () async {
-              Navigator.pop(context);
-              await Future.delayed(const Duration(milliseconds: 100));
-              if (context.mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const NotificationSettingsScreen(),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    children: [
+                      // Compact Profile Avatar
+                      _buildProfileAvatar(authProvider, isSmallScreen ? 20 : 25),
+                      const SizedBox(width: 12),
+                      // User Info beside avatar to save space
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              authProvider.userData?['name'] ?? 'User',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: isSmallScreen ? 16 : 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                authProvider.userData?['email'] ?? 'No email',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: isSmallScreen ? 9 : 10,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                );
-              }
-            },
+                ],
+              ),
+            ),
           ),
-          const Divider(
-            color: Color(0xFF2A2A3E),
-            thickness: 1,
-            indent: 16,
-            endIndent: 16,
+        );
+      },
+    );
+  }
+
+  Widget _buildCompactSection(String title, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Row(
+            children: [
+              Container(
+                width: 3,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(255, 10, 108, 236),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Color(0xFF8A94A6),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(
-              Icons.settings,
-              color: Color.fromARGB(255, 10, 108, 236),
+        ),
+        ...children,
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  Widget _buildCompactTile(
+    BuildContext context,
+    IconData icon,
+    String title,
+    VoidCallback onTap,
+    Color color,
+  ) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color: color.withOpacity(0.05),
+      ),
+      child: ListTile(
+        dense: true, // Makes tile more compact
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+        leading: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(icon, color: color, size: 18),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          color: color.withOpacity(0.5),
+          size: 12,
+        ),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+      ),
+    );
+  }
+
+  Widget _buildNotificationTile(BuildContext context) {
+    return StreamBuilder<List<dynamic>>(
+      stream: EnhancedNotificationService().notificationStream,
+      builder: (context, snapshot) {
+        final notifications = snapshot.data ?? [];
+        final unreadCount = notifications.where((n) => !n.isRead).length;
+
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: Colors.blue.withOpacity(0.05),
+          ),
+          child: ListTile(
+            dense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+            leading: Stack(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Icon(Icons.notifications_rounded, color: Colors.blue, size: 18),
+                ),
+                if (unreadCount > 0)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        unreadCount > 9 ? '9+' : unreadCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 7,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             title: const Text(
-              'Settings',
-              style: TextStyle(color: Colors.white),
-            ),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const EditProfileScreen(),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.person,
-              color: Color.fromARGB(255, 10, 108, 236),
-            ),
-            title: const Text('Profile', style: TextStyle(color: Colors.white)),
-            onTap: () {
-              Navigator.pop(context);
-              _showProfileDialog(context);
-            },
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text(
-              'Quick Actions',
+              'Notifications',
               style: TextStyle(
-                color: Color(0xFF8A94A6),
-                fontSize: 12,
+                color: Colors.white,
+                fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
             ),
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.help_outline,
-              color: Color.fromARGB(255, 10, 108, 236),
-            ),
-            title: const Text('Help & Support', style: TextStyle(color: Colors.white)),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const HelpSupportScreen(),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.info_outline,
-              color: Color.fromARGB(255, 10, 108, 236),
-            ),
-            title: const Text('About', style: TextStyle(color: Colors.white)),
-            onTap: () {
-              Navigator.pop(context);
-              _showAboutDialog(context);
-            },
-          ),
-          const Divider(
-            color: Color(0xFF2A2A3E),
-            thickness: 1,
-            indent: 16,
-            endIndent: 16,
-          ),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Logout', style: TextStyle(color: Colors.red)),
-            onTap: () {
-              Navigator.pop(context);
-              _showLogoutDialog(context);
-            },
-          ),
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              'Currency Converter v2.1.0',
-              style: TextStyle(
+            subtitle: Text(
+              unreadCount > 0 ? '$unreadCount new' : 'All caught up!',
+              style: const TextStyle(
                 color: Color(0xFF8A94A6),
-                fontSize: 11,
+                fontSize: 10,
               ),
-              textAlign: TextAlign.center,
+            ),
+            trailing: Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.blue.withOpacity(0.5),
+              size: 12,
+            ),
+            onTap: () {
+              HapticFeedback.lightImpact();
+              _navigateToScreen(context, 'Notifications');
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCompactFooter(BuildContext context, bool isSmallScreen) {
+    return Container(
+      padding: EdgeInsets.all(isSmallScreen ? 8 : 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A2E),
+        border: Border(
+          top: BorderSide(
+            color: const Color.fromARGB(255, 10, 108, 236).withOpacity(0.3),
+          ),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min, // Important: Don't take extra space
+        children: [
+          // Compact Logout Button
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.red.withOpacity(0.3)),
+            ),
+            child: ListTile(
+              dense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+              leading: const Icon(Icons.logout_rounded, color: Colors.red, size: 18),
+              title: Text(
+                'Logout',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.w500,
+                  fontSize: isSmallScreen ? 12 : 13,
+                ),
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios, color: Colors.red, size: 12),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                Navigator.pop(context);
+                _showLogoutDialog(context);
+              },
             ),
           ),
+          
+          if (!isSmallScreen) ...[
+            const SizedBox(height: 8),
+            // App Version - Hide on small screens
+            const Text(
+              'v2.1.0',
+              style: TextStyle(color: Color(0xFF8A94A6), fontSize: 10),
+            ),
+          ],
         ],
       ),
     );
@@ -308,211 +415,121 @@ class AppDrawer extends StatelessWidget {
     if (profileImageBase64 != null && profileImageBase64.isNotEmpty) {
       try {
         final bytes = base64Decode(profileImageBase64);
-        return CircleAvatar(
-          radius: radius,
-          backgroundColor: Colors.white,
-          child: ClipOval(
-            child: Image.memory(
-              bytes,
-              width: radius * 2,
-              height: radius * 2,
-              fit: BoxFit.cover,
+        return Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 2),
+          ),
+          child: CircleAvatar(
+            radius: radius,
+            backgroundColor: Colors.white,
+            child: ClipOval(
+              child: Image.memory(
+                bytes,
+                width: radius * 2,
+                height: radius * 2,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    Icons.person,
+                    size: radius * 1.2,
+                    color: const Color.fromARGB(255, 10, 108, 236),
+                  );
+                },
+              ),
             ),
           ),
         );
       } catch (e) {
-        print('Error decoding profile image in drawer: $e');
+        print('Error decoding profile image: $e');
       }
     }
 
-    return CircleAvatar(
-      radius: radius,
-      backgroundColor: Colors.white,
-      child: authProvider.userData?['name'] != null
-          ? Text(
-              authProvider.userData!['name'][0].toUpperCase(),
-              style: TextStyle(
-                fontSize: radius * 0.8,
-                fontWeight: FontWeight.bold,
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
+      ),
+      child: CircleAvatar(
+        radius: radius,
+        backgroundColor: Colors.white,
+        child: authProvider.userData?['name'] != null
+            ? Text(
+                authProvider.userData!['name'][0].toUpperCase(),
+                style: TextStyle(
+                  fontSize: radius * 0.8,
+                  fontWeight: FontWeight.bold,
+                  color: const Color.fromARGB(255, 10, 108, 236),
+                ),
+              )
+            : Icon(
+                Icons.person,
+                size: radius * 1.2,
                 color: const Color.fromARGB(255, 10, 108, 236),
               ),
-            )
-          : Icon(
-              Icons.person,
-              size: radius * 1.2,
-              color: const Color.fromARGB(255, 10, 108, 236),
-            ),
+      ),
+    );
+  }
+
+  // Navigation Helper
+  void _navigateToScreen(BuildContext context, String screenName) {
+    Navigator.pop(context);
+    
+    try {
+      Widget? screen;
+      
+      switch (screenName) {
+        case 'Portfolio':
+          screen = const PortfolioScreen();
+          break;
+        case 'RateAlerts':
+          screen = const RateAlertsScreen();
+          break;
+        case 'News':
+          screen = const CurrencyNewsScreen();
+          break;
+        case 'Notifications':
+          screen = const NotificationsInboxScreen();
+          break;
+        case 'Settings':
+          screen = const EditProfileScreen();
+          break;
+        case 'Help':
+          screen = const HelpSupportScreen();
+          break;
+        case 'Feedback':
+          screen = const UserFeedbackScreen();
+          break;
+        default:
+          _showMessage(context, 'Screen not found: $screenName');
+          return;
+      }
+      
+      if (screen != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => screen!),
+        );
+      }
+    } catch (e) {
+      print('Navigation error: $e');
+      _showMessage(context, 'Error opening $screenName');
+    }
+  }
+
+  void _showMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 2),
+      ),
     );
   }
 
   void _showProfileDialog(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF0F0F23),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-        ),
-        title: Row(
-          children: [
-            _buildProfileAvatar(authProvider, 20),
-            const SizedBox(width: 12),
-            const Text(
-              'User Profile',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 20),
-                child: _buildProfileAvatar(authProvider, 40),
-              ),
-            ),
-            _buildProfileRow('Name', authProvider.userData?['name'] ?? 'N/A'),
-            const SizedBox(height: 12),
-            _buildProfileRow('Email', authProvider.userData?['email'] ?? 'N/A'),
-            const SizedBox(height: 12),
-            _buildProfileRow('Phone', authProvider.userData?['phone'] ?? 'Not set'),
-            const SizedBox(height: 12),
-            _buildProfileRow('Address', authProvider.userData?['address'] ?? 'Not set'),
-            const SizedBox(height: 12),
-            _buildProfileRow(
-              'Member Since',
-              authProvider.userData?['createdAt'] != null
-                  ? authProvider.userData!['createdAt']
-                      .toDate()
-                      .toString()
-                      .split(' ')[0]
-                  : 'N/A',
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Close',
-              style: TextStyle(color: Color(0xFF8A94A6)),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const EditProfileScreen(),
-                ),
-              );
-            },
-            child: const Text(
-              'Edit Profile',
-              style: TextStyle(color: Color.fromARGB(255, 10, 108, 236)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfileRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 80,
-          child: Text(
-            '$label:',
-            style: const TextStyle(
-              color: Color(0xFF8A94A6),
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showAboutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF0F0F23),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: const Row(
-          children: [
-            Icon(Icons.info_outline, color: Color.fromARGB(255, 10, 108, 236)),
-            SizedBox(width: 12),
-            Text(
-              'About',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Currency Converter',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Version 2.1.0',
-              style: TextStyle(color: Color(0xFF8A94A6), fontSize: 14),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'A comprehensive currency conversion app with real-time rates, '
-              'smart notifications, and portfolio tracking.',
-              style: TextStyle(color: Color(0xFF8A94A6), fontSize: 14),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Features:\n'
-              '• Real-time currency rates\n'
-              '• Smart rate alerts\n'
-              '• Push notifications\n'
-              '• Portfolio tracking\n'
-              '• Dark theme support',
-              style: TextStyle(color: Color(0xFF8A94A6), fontSize: 12),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close', style: TextStyle(color: Color(0xFF8A94A6))),
-          ),
-        ],
-      ),
-    );
+    Navigator.pop(context);
+    _navigateToScreen(context, 'Settings');
   }
 
   void _showLogoutDialog(BuildContext context) {
@@ -521,26 +538,19 @@ class AppDrawer extends StatelessWidget {
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF0F0F23),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: Row(
+        title: const Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.logout, color: Colors.red, size: 24),
-            ),
-            const SizedBox(width: 12),
-            const Text(
+            Icon(Icons.logout_rounded, color: Colors.red, size: 20),
+            SizedBox(width: 8),
+            Text(
               'Logout',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              style: TextStyle(color: Colors.white, fontSize: 16),
             ),
           ],
         ),
         content: const Text(
-          'Are you sure you want to logout from your account?',
-          style: TextStyle(color: Color(0xFF8A94A6), fontSize: 16),
+          'Are you sure you want to logout?',
+          style: TextStyle(color: Color(0xFF8A94A6), fontSize: 14),
         ),
         actions: [
           TextButton(
@@ -554,32 +564,38 @@ class AppDrawer extends StatelessWidget {
                     ? null
                     : () async {
                         Navigator.pop(context);
-                        await authProvider.logoutUser();
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Logged out successfully!'),
-                              backgroundColor: Color.fromARGB(255, 10, 108, 236),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
+                        try {
+                          await authProvider.logoutUser();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Logged out successfully!'),
+                                backgroundColor: Color.fromARGB(255, 10, 108, 236),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Logout failed: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         }
                       },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 child: authProvider.isLoading
                     ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                       )
-                    : const Text('Logout'),
+                    : const Text('Logout', style: TextStyle(color: Colors.white, fontSize: 12)),
               );
             },
           ),

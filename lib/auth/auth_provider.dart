@@ -1,287 +1,440 @@
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:js' as js;
 
-class AuthProvider with ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
-  User? _user;
-  bool _isLoading = true;
+class AuthProvider extends ChangeNotifier {
+  bool _isLoading = false;
+  bool _isLoggedIn = false;
   String _errorMessage = '';
   Map<String, dynamic>? _userData;
+  User? _user;
+
+  // Firebase instances
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Getters
-  User? get user => _user;
   bool get isLoading => _isLoading;
+  bool get isAuthenticated => _isLoggedIn;
+  bool get isLoggedIn => _isLoggedIn;
   String get errorMessage => _errorMessage;
   Map<String, dynamic>? get userData => _userData;
-  bool get isAuthenticated => _user != null;
+  User? get user => _user;
 
+  // Google Sign In instance
+  late GoogleSignIn _googleSignIn;
+
+  // Constructor
   AuthProvider() {
-    _initializeAuth();
+    _initializeGoogleSignIn();
+    _checkAuthState();
+    _auth.authStateChanges().listen(_onAuthStateChanged);
   }
 
-  // Initialize auth state
-  void _initializeAuth() {
-    _auth.authStateChanges().listen((User? user) async {
-      _user = user;
-      if (user != null) {
-        await _loadUserData();
-      } else {
-        _userData = null;
+  // Initialize Google Sign In
+  void _initializeGoogleSignIn() {
+    if (kIsWeb) {
+      _googleSignIn = GoogleSignIn(
+        clientId: '947979021795-l82ch0gmiosdpbob2166o3sfpq3keuuj.apps.googleusercontent.com',
+        scopes: ['email', 'profile'],
+      );
+    } else {
+      _googleSignIn = GoogleSignIn(
+        scopes: ['email', 'profile'],
+      );
+    }
+  }
+
+  // Check if Google Sign-In is ready (Web only)
+  bool _isGoogleSignInReady() {
+    if (!kIsWeb) return true;
+    
+    try {
+      return js.context['googleSignInInitialized'] == true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Handle Firebase auth state changes
+  void _onAuthStateChanged(User? user) async {
+    _user = user;
+    if (user != null) {
+      _isLoggedIn = true;
+      await _loadUserDataFromFirestore();
+    } else {
+      _isLoggedIn = false;
+      _userData = null;
+    }
+    notifyListeners();
+  }
+
+  // Check authentication state on app start
+  Future<void> _checkAuthState() async {
+    try {
+      setLoading(true);
+      _user = _auth.currentUser;
+      
+      if (_user != null) {
+        _isLoggedIn = true;
+        await _loadUserDataFromFirestore();
       }
-      _isLoading = false;
+      
+      setLoading(false);
+    } catch (e) {
+      print('Error checking auth state: $e');
+      setLoading(false);
+    }
+  }
+
+  // Load user data from Firestore
+  Future<void> _loadUserDataFromFirestore() async {
+    if (_user == null) return;
+    
+    try {
+      final doc = await _firestore.collection('users').doc(_user!.uid).get();
+      if (doc.exists) {
+        _userData = doc.data();
+        _userData!['uid'] = _user!.uid;
+        _userData!['email'] = _user!.email;
+        _userData!['name'] = _userData!['name'] ?? _user!.displayName ?? 'User';
+      } else {
+        await _createUserDocument();
+      }
+    } catch (e) {
+      print('Error loading user data from Firestore: $e');
+    }
+  }
+
+  // Create user document in Firestore
+  Future<void> _createUserDocument() async {
+    if (_user == null) return;
+    
+    try {
+      final userData = {
+        'uid': _user!.uid,
+        'name': _user!.displayName ?? 'User',
+        'email': _user!.email ?? '',
+        'phone': '',
+        'address': '',
+        'profileImageBase64': null,
+        'authProvider': 'email',
+        'platform': kIsWeb ? 'web' : 'mobile',
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+      
+      await _firestore.collection('users').doc(_user!.uid).set(userData);
+      _userData = userData;
+    } catch (e) {
+      print('Error creating user document: $e');
+    }
+  }
+
+  // Reload user data from Firestore
+  Future<void> reloadUserData() async {
+    if (_user == null) return;
+    
+    try {
+      await _user!.reload();
+      _user = _auth.currentUser;
+      await _loadUserDataFromFirestore();
       notifyListeners();
-    });
+    } catch (e) {
+      print('Error reloading user data: $e');
+    }
   }
 
   // Set loading state
-  void _setLoading(bool loading) {
+  void setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
   }
 
   // Set error message
-  void _setError(String error) {
+  void setError(String error) {
     _errorMessage = error;
     notifyListeners();
   }
 
-  // Clear error
+  // Clear error message
   void clearError() {
     _errorMessage = '';
     notifyListeners();
   }
 
-  // Load user data from Firestore
-  Future<void> _loadUserData() async {
-    if (_user != null) {
-      try {
-        DocumentSnapshot doc = await _firestore.collection('users').doc(_user!.uid).get();
-        if (doc.exists) {
-          _userData = doc.data() as Map<String, dynamic>;
-          print('✅ User data loaded: $_userData'); // Debug log
-        } else {
-          print('❌ User document does not exist');
-        }
-      } catch (e) {
-        print('❌ Error loading user data: $e');
-      }
-    }
-  }
-
-  // Reload user data (call this after profile updates)
-  Future<void> reloadUserData() async {
-    if (_user != null) {
-      await _loadUserData();
-      notifyListeners();
-    }
-  }
-
-  // Register user
+  // Regular email/password registration
   Future<bool> registerUser({
     required String name,
     required String email,
     required String password,
   }) async {
     try {
-      _setLoading(true);
+      setLoading(true);
       clearError();
 
-      print('Attempting to register user: $email'); // Debug log
-
-      // Create user with email and password
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email.trim(),
-        password: password.trim(),
+      final UserCredential result = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
       );
 
-      print('User created successfully: ${userCredential.user?.uid}'); // Debug log
-
-      // Update display name
-      await userCredential.user?.updateDisplayName(name);
-
-      // Save user data to Firestore
-      await _firestore.collection('users').doc(userCredential.user?.uid).set({
-        'uid': userCredential.user?.uid,
-        'name': name.trim(),
-        'email': email.trim(),
-        'phone': '',
-        'address': '',
-        'profileImageUrl': '',
-        'profileImageBase64': '',
-        'dateOfBirth': null,
-        'createdAt': FieldValue.serverTimestamp(),
-        'lastLogin': FieldValue.serverTimestamp(),
-      });
-
-      print('User data saved to Firestore'); // Debug log
-
-      _setLoading(false);
-      return true;
-    } on FirebaseAuthException catch (e) {
-      _setLoading(false);
-      print('Firebase Auth Error: ${e.code} - ${e.message}'); // Debug log
-      
-      switch (e.code) {
-        case 'weak-password':
-          _setError('Password is too weak. Please use at least 6 characters.');
-          break;
-        case 'email-already-in-use':
-          _setError('An account already exists with this email address.');
-          break;
-        case 'invalid-email':
-          _setError('Please enter a valid email address.');
-          break;
-        case 'operation-not-allowed':
-          _setError('Email/password accounts are not enabled. Please contact support.');
-          break;
-        default:
-          _setError('Registration failed: ${e.message ?? 'Unknown error'}');
+      if (result.user != null) {
+        _user = result.user;
+        await _user!.updateDisplayName(name);
+        await _createUserDocument();
+        _isLoggedIn = true;
+        setLoading(false);
+        notifyListeners();
+        return true;
       }
+
+      setLoading(false);
       return false;
     } catch (e) {
-      _setLoading(false);
-      print('General Error: $e'); // Debug log
-      _setError('An unexpected error occurred. Please try again.');
+      setError('Registration failed: ${e.toString()}');
+      setLoading(false);
       return false;
     }
   }
 
-  // Login user
+  // Regular email/password login
   Future<bool> loginUser({
     required String email,
     required String password,
   }) async {
     try {
-      _setLoading(true);
+      setLoading(true);
       clearError();
 
-      print('Attempting to login user: $email'); // Debug log
+      final UserCredential result = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-      // Validate inputs
-      if (email.trim().isEmpty || password.trim().isEmpty) {
-        _setError('Please enter both email and password.');
-        _setLoading(false);
+      if (result.user != null) {
+        _user = result.user;
+        await _loadUserDataFromFirestore();
+        _isLoggedIn = true;
+        setLoading(false);
+        notifyListeners();
+        return true;
+      }
+
+      setLoading(false);
+      return false;
+    } catch (e) {
+      setError('Login failed: ${e.toString()}');
+      setLoading(false);
+      return false;
+    }
+  }
+
+  // Google Sign In (SIMPLIFIED)
+  Future<bool> signInWithGoogle() async {
+    try {
+      setLoading(true);
+      clearError();
+
+      // For web, check if Google Sign-In is ready
+      if (kIsWeb && !_isGoogleSignInReady()) {
+        setError('Google Sign-In not ready. Please refresh the page and try again.');
+        setLoading(false);
         return false;
       }
 
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: email.trim(),
-        password: password.trim(),
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        setLoading(false);
+        return false;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      
+      if (googleAuth.accessToken == null || googleAuth.idToken == null) {
+        setError('Failed to get Google authentication tokens');
+        setLoading(false);
+        return false;
+      }
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken!,
+        idToken: googleAuth.idToken!,
       );
 
-      print('User logged in successfully: ${userCredential.user?.uid}'); // Debug log
-
-      // Update last login time
-      if (userCredential.user != null) {
-        await _firestore.collection('users').doc(userCredential.user!.uid).update({
-          'lastLogin': FieldValue.serverTimestamp(),
-        });
-      }
-
-      _setLoading(false);
-      return true;
-    } on FirebaseAuthException catch (e) {
-      _setLoading(false);
-      print('Firebase Auth Error: ${e.code} - ${e.message}'); // Debug log
+      final UserCredential result = await _auth.signInWithCredential(credential);
       
-      switch (e.code) {
-        case 'user-not-found':
-          _setError('No account found with this email address. Please sign up first.');
-          break;
-        case 'wrong-password':
-          _setError('Incorrect password. Please try again.');
-          break;
-        case 'invalid-email':
-          _setError('Please enter a valid email address.');
-          break;
-        case 'user-disabled':
-          _setError('This account has been disabled. Please contact support.');
-          break;
-        case 'too-many-requests':
-          _setError('Too many failed attempts. Please try again later.');
-          break;
-        case 'invalid-credential':
-          _setError('Invalid email or password. Please check your credentials.');
-          break;
-        case 'network-request-failed':
-          _setError('Network error. Please check your internet connection.');
-          break;
-        default:
-          _setError('Login failed: ${e.message ?? 'Please check your email and password'}');
+      if (result.user != null) {
+        _user = result.user;
+        
+        final userData = {
+          'uid': _user!.uid,
+          'name': _user!.displayName ?? 'User',
+          'email': _user!.email ?? '',
+          'phone': '',
+          'address': '',
+          'profileImageBase64': null,
+          'authProvider': 'google',
+          'platform': kIsWeb ? 'web' : 'mobile',
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        };
+        
+        await _firestore.collection('users').doc(_user!.uid).set(userData, SetOptions(merge: true));
+        await _loadUserDataFromFirestore();
+        
+        _isLoggedIn = true;
+        setLoading(false);
+        notifyListeners();
+        return true;
       }
+
+      setLoading(false);
       return false;
     } catch (e) {
-      _setLoading(false);
-      print('General Error: $e'); // Debug log
-      _setError('An unexpected error occurred. Please try again.');
+      setError('Google sign-in failed: ${e.toString()}');
+      setLoading(false);
       return false;
+    }
+  }
+
+  // Facebook Sign In
+  Future<bool> signInWithFacebook() async {
+    try {
+      setLoading(true);
+      clearError();
+
+      final LoginResult result = await FacebookAuth.instance.login(
+        permissions: ['email', 'public_profile'],
+      );
+
+      if (result.status == LoginStatus.success && result.accessToken != null) {
+        final credential = FacebookAuthProvider.credential(result.accessToken!.tokenString);
+        final UserCredential userCredential = await _auth.signInWithCredential(credential);
+        
+        if (userCredential.user != null) {
+          _user = userCredential.user;
+          
+          final userData = await FacebookAuth.instance.getUserData();
+          
+          final firestoreUserData = {
+            'uid': _user!.uid,
+            'name': userData['name'] ?? _user!.displayName ?? 'User',
+            'email': userData['email'] ?? _user!.email ?? '',
+            'phone': '',
+            'address': '',
+            'profileImageBase64': null,
+            'authProvider': 'facebook',
+            'platform': kIsWeb ? 'web' : 'mobile',
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          };
+          
+          await _firestore.collection('users').doc(_user!.uid).set(firestoreUserData, SetOptions(merge: true));
+          await _loadUserDataFromFirestore();
+          
+          _isLoggedIn = true;
+          setLoading(false);
+          notifyListeners();
+          return true;
+        }
+      } else {
+        setError('Facebook sign-in failed: ${result.message ?? 'Unknown error'}');
+      }
+
+      setLoading(false);
+      return false;
+    } catch (e) {
+      setError('Facebook sign-in failed: ${e.toString()}');
+      setLoading(false);
+      return false;
+    }
+  }
+
+  // Reset Password
+  Future<bool> resetPassword({required String email}) async {
+    try {
+      setLoading(true);
+      clearError();
+
+      await _auth.sendPasswordResetEmail(email: email);
+      setLoading(false);
+      return true;
+    } catch (e) {
+      setError('Password reset failed: ${e.toString()}');
+      setLoading(false);
+      return false;
+    }
+  }
+
+  // Sign out from social providers
+  Future<void> _signOutFromSocialProviders() async {
+    try {
+      if (await _googleSignIn.isSignedIn()) {
+        await _googleSignIn.signOut();
+      }
+      await FacebookAuth.instance.logOut();
+    } catch (e) {
+      print('Error signing out from social providers: $e');
     }
   }
 
   // Logout user
-  Future<void> logoutUser() async {
+  Future<bool> logoutUser() async {
     try {
+      setLoading(true);
+      await _signOutFromSocialProviders();
       await _auth.signOut();
+      
       _userData = null;
-      clearError();
-      print('User logged out successfully'); // Debug log
-    } catch (e) {
-      print('Logout Error: $e'); // Debug log
-      _setError('Logout failed. Please try again.');
-    }
-  }
-
-  // Reset password
-  Future<bool> resetPassword({required String email}) async {
-    try {
-      _setLoading(true);
-      clearError();
-
-      if (email.trim().isEmpty) {
-        _setError('Please enter your email address.');
-        _setLoading(false);
-        return false;
-      }
-
-      await _auth.sendPasswordResetEmail(email: email.trim());
+      _user = null;
+      _isLoggedIn = false;
       
-      _setLoading(false);
+      setLoading(false);
+      notifyListeners();
       return true;
-    } on FirebaseAuthException catch (e) {
-      _setLoading(false);
-      print('Password Reset Error: ${e.code} - ${e.message}'); // Debug log
-      
-      switch (e.code) {
-        case 'user-not-found':
-          _setError('No account found with this email address.');
-          break;
-        case 'invalid-email':
-          _setError('Please enter a valid email address.');
-          break;
-        default:
-          _setError('Failed to send reset email: ${e.message ?? 'Unknown error'}');
-      }
-      return false;
     } catch (e) {
-      _setLoading(false);
-      print('General Error: $e'); // Debug log
-      _setError('An unexpected error occurred. Please try again.');
+      setError('Logout failed: ${e.toString()}');
+      setLoading(false);
       return false;
     }
   }
 
-  // Test Firebase connection
-  Future<bool> testFirebaseConnection() async {
+  // Update user profile
+  Future<bool> updateUserProfile({
+    String? name,
+    String? profileImageBase64,
+  }) async {
     try {
-      // Try to access Firestore
-      await _firestore.collection('test').limit(1).get();
-      print('Firebase connection successful'); // Debug log
+      setLoading(true);
+      clearError();
+
+      if (_user != null) {
+        Map<String, dynamic> updateData = {};
+        
+        if (name != null) {
+          updateData['name'] = name;
+          await _user!.updateDisplayName(name);
+        }
+        
+        if (profileImageBase64 != null) {
+          updateData['profileImageBase64'] = profileImageBase64;
+        }
+        
+        updateData['updatedAt'] = FieldValue.serverTimestamp();
+
+        await _firestore.collection('users').doc(_user!.uid).update(updateData);
+        await reloadUserData();
+      }
+
+      setLoading(false);
       return true;
     } catch (e) {
-      print('Firebase connection failed: $e'); // Debug log
+      setError('Profile update failed: ${e.toString()}');
+      setLoading(false);
       return false;
     }
   }

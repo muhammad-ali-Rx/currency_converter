@@ -8,7 +8,7 @@ void main() {
     await tester.pumpWidget(const CurrencyConverterApp());
 
     // Check if SplashScreen widget is present
-    expect(find.byType(SplashScreen), findsOneWidget);
+    expect(find.byType(UniqueSplashScreen), findsOneWidget);
 
     // Wait for all animations and semantics to settle
     await tester.pumpAndSettle();

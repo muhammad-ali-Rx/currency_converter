@@ -30,7 +30,7 @@ void main() async {
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
+      statusBarIconBrightness: Brightness.light, // Changed to light for dark theme
     ),
   );
 
@@ -48,13 +48,15 @@ class CurrencyConverterApp extends StatelessWidget {
         title: 'Currency Converter',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-          primaryColor: const Color(0xFF2E7D32), // Green
+          primaryColor: const Color.fromARGB(255, 10, 108, 236),
           colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF2E7D32),
-            secondary: const Color(0xFF1565C0), // Blue
+            seedColor: const Color.fromARGB(255, 10, 108, 236),
+            secondary: const Color(0xFF44A08D),
+            brightness: Brightness.dark,
           ),
           fontFamily: 'Roboto',
           useMaterial3: true,
+          scaffoldBackgroundColor: const Color(0xFF0A0A1A),
         ),
         home: const AppInitializer(),
       ),
@@ -91,7 +93,7 @@ class _AppInitializerState extends State<AppInitializer> {
   @override
   Widget build(BuildContext context) {
     if (_showSplash) {
-      return const SplashScreen();
+      return const UniqueSplashScreen();
     }
 
     return Consumer<AuthProvider>(
@@ -99,16 +101,21 @@ class _AppInitializerState extends State<AppInitializer> {
         // Show loading screen while checking auth state
         if (authProvider.isLoading) {
           return const Scaffold(
-            backgroundColor: Color.fromARGB(255, 7, 90, 216),
+            backgroundColor: Color(0xFF0A0A1A),
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(color: Colors.white),
+                  CircularProgressIndicator(
+                    color: Color.fromARGB(255, 10, 108, 236),
+                  ),
                   SizedBox(height: 16),
                   Text(
                     'Loading...',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    style: TextStyle(
+                      color: Colors.white, 
+                      fontSize: 16,
+                    ),
                   ),
                 ],
               ),

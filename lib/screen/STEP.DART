@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode; // FIXED: Added kDebugMode import
 import 'package:currency_converter/auth/auth_provider.dart';
 
 class ProfileCompletionScreen extends StatefulWidget {
@@ -58,6 +58,17 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
     ));
     
     _animationController.forward();
+    
+    // Load user data when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadUserData();
+    });
+  }
+
+  // Add method to load user data
+  Future<void> _loadUserData() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.reloadUserData();
   }
 
   @override
@@ -72,7 +83,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A1A), // Dark theme background
+      backgroundColor: const Color(0xFF0A0A1A),
       body: SafeArea(
         child: AnimatedBuilder(
           animation: _animationController,
@@ -116,6 +127,39 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
   Widget _buildWelcomeHeader() {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
+        // FIXED: Better name resolution logic
+        String getUserName() {
+          // Try multiple sources for the name
+          String? name;
+          
+          // 1. From userData (Firestore)
+          name = authProvider.userData?['name'];
+          if (name != null && name.isNotEmpty && name != 'User') {
+            return name;
+          }
+          
+          // 2. From Firebase User displayName
+          name = authProvider.user?.displayName;
+          if (name != null && name.isNotEmpty && name != 'User') {
+            return name;
+          }
+          
+          // 3. From email (before @ symbol)
+          final email = authProvider.user?.email ?? authProvider.userData?['email'];
+          if (email != null && email.isNotEmpty) {
+            final emailName = email.split('@')[0];
+            if (emailName.isNotEmpty) {
+              // Capitalize first letter
+              return emailName[0].toUpperCase() + emailName.substring(1);
+            }
+          }
+          
+          // 4. Fallback
+          return 'User';
+        }
+
+        final userName = getUserName();
+        
         return Column(
           children: [
             Container(
@@ -143,11 +187,11 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
             ),
             const SizedBox(height: 24),
             Text(
-              'Welcome ${authProvider.userData?['name'] ?? 'User'}! 👋',
+              'Welcome $userName! 👋',
               style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: Colors.white, // Updated text color
+                color: Colors.white,
               ),
               textAlign: TextAlign.center,
             ),
@@ -156,11 +200,43 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
               'Let\'s complete your profile to get started with the best experience',
               style: TextStyle(
                 fontSize: 16,
-                color: Color(0xFF8A94A6), // Updated text color
+                color: Color(0xFF8A94A6),
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
             ),
+            
+            // DEBUG INFO (Remove in production) - FIXED: Now properly imported
+            if (kDebugMode) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      'Debug Info:',
+                      style: TextStyle(color: Colors.yellow, fontSize: 12),
+                    ),
+                    Text(
+                      'userData name: ${authProvider.userData?['name']}',
+                      style: const TextStyle(color: Colors.white70, fontSize: 10),
+                    ),
+                    Text(
+                      'displayName: ${authProvider.user?.displayName}',
+                      style: const TextStyle(color: Colors.white70, fontSize: 10),
+                    ),
+                    Text(
+                      'email: ${authProvider.user?.email}',
+                      style: const TextStyle(color: Colors.white70, fontSize: 10),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         );
       },
@@ -175,7 +251,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Colors.white, // Updated text color
+            color: Colors.white,
           ),
         ),
         const SizedBox(height: 16),
@@ -215,7 +291,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
           _hasImage() ? 'Tap to change photo' : 'Tap to add photo',
           style: const TextStyle(
             fontSize: 14,
-            color: Color(0xFF8A94A6), // Updated text color
+            color: Color(0xFF8A94A6),
           ),
         ),
       ],
@@ -304,7 +380,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
   Widget _buildDateField() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0F0F23), // Dark card background
+        color: const Color(0xFF0F0F23),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -321,9 +397,9 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.calendar_today,
-                color: const Color(0xFF4ECDC4),
+                color: Color(0xFF4ECDC4),
                 size: 22,
               ),
               const SizedBox(width: 16),
@@ -331,10 +407,10 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Date of Birth',
                       style: TextStyle(
-                        color: const Color(0xFF8A94A6),
+                        color: Color(0xFF8A94A6),
                         fontSize: 14,
                       ),
                     ),
@@ -354,9 +430,9 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
                   ],
                 ),
               ),
-              Icon(
+              const Icon(
                 Icons.arrow_drop_down,
-                color: const Color(0xFF8A94A6),
+                color: Color(0xFF8A94A6),
                 size: 24,
               ),
             ],
@@ -376,7 +452,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0F0F23), // Dark card background
+        color: const Color(0xFF0F0F23),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -394,7 +470,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
         style: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: Colors.white, // Updated text color
+          color: Colors.white,
         ),
         decoration: InputDecoration(
           labelText: label,
@@ -503,7 +579,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
         'Skip for now',
         style: TextStyle(
           fontSize: 16,
-          color: Color(0xFF8A94A6), // Updated text color
+          color: Color(0xFF8A94A6),
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -519,7 +595,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark( // Updated to dark theme
+            colorScheme: const ColorScheme.dark(
               primary: Color(0xFF4ECDC4),
               onPrimary: Colors.white,
               surface: Color(0xFF0F0F23),

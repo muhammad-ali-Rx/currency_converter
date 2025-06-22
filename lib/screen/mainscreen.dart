@@ -1069,7 +1069,7 @@ class _WalletScreenState extends State<WalletScreen> {
         backgroundColor: const Color(0xFF0A0A1A),
         elevation: 0,
         title: const Text(
-          'Crypto Wallet',
+          'CurrenSee',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w600,
@@ -1102,7 +1102,7 @@ class _WalletScreenState extends State<WalletScreen> {
           ),
         ],
       ),
-      drawer: const AppDrawer(),
+      drawer: const FixedOverflowDrawer(),
       body: (isLoading)
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
