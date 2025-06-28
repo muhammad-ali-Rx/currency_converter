@@ -2,14 +2,22 @@ import 'package:currency_converter/screen/convter.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:currency_converter/model/currency.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'package:currency_converter/auth/auth_provider.dart';
 import 'dart:math';
 import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CurrencyDetailPage extends StatefulWidget {
-  final Currency currency;
+  final Currency currency; // Selected currency (PKR)
+  final Currency baseCurrency; // Base currency (USD)
 
-  const CurrencyDetailPage({super.key, required this.currency});
+  const CurrencyDetailPage({
+    super.key, 
+    required this.currency,
+    required this.baseCurrency, // ✅ NEW: Base currency parameter
+  });
 
   @override
   State<CurrencyDetailPage> createState() => _CurrencyDetailPageState();
@@ -25,10 +33,18 @@ class ChartDataPoint {
     required this.value,
     required this.timestamp,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'date': date.toIso8601String(),
+      'value': value,
+      'timestamp': timestamp,
+    };
+  }
 }
 
 class _CurrencyDetailPageState extends State<CurrencyDetailPage> {
-  final TextEditingController _usdController = TextEditingController();
+  final TextEditingController _amountController = TextEditingController();
   double _convertedAmount = 0;
   bool _isRealTimeActive = true;
   DateTime _lastUpdateTime = DateTime.now();
@@ -37,18 +53,20 @@ class _CurrencyDetailPageState extends State<CurrencyDetailPage> {
   String _selectedPeriod = '1Y';
   List<ChartDataPoint> _chartData = [];
   bool _isLoadingChart = false;
-  late Currency _currentCurrency;
+  
+  // ✅ FIXED: Base currency logic
+  late Currency _baseCurrency; // From Currency (USD)
+  late Currency _targetCurrency; // To Currency (PKR)
+  
+  // ✅ Direct conversion rate (Base → Target)
+  double _conversionRate = 1.0;
+  double _previousRate = 1.0;
+  bool _isRateIncreasing = true;
 
-  // Available currencies for conversion
-  final List<Currency> _availableCurrencies = [
-    Currency(code: 'USD', name: 'US Dollar', rate: 1.0, amount: 1.0, percentChange: 0.0, ratePerUsd: 1.0, color: Colors.green),
-    Currency(code: 'EUR', name: 'Euro', rate: 0.85, amount: 0.85, percentChange: 1.2, ratePerUsd: 0.85, color: Colors.blue),
-    Currency(code: 'GBP', name: 'British Pound', rate: 0.73, amount: 0.73, percentChange: -0.8, ratePerUsd: 0.73, color: Colors.purple),
-    Currency(code: 'JPY', name: 'Japanese Yen', rate: 110.0, amount: 110.0, percentChange: 0.5, ratePerUsd: 110.0, color: Colors.red),
-    Currency(code: 'CAD', name: 'Canadian Dollar', rate: 1.25, amount: 1.25, percentChange: 0.3, ratePerUsd: 1.25, color: Colors.orange),
-  ];
-
-  Currency _selectedToCurrency = Currency(code: 'USD', name: 'US Dollar', rate: 1.0, amount: 1.0, percentChange: 0.0, ratePerUsd: 1.0, color: Colors.green);
+  // ✅ User Profile Data (for database only)
+  String _userName = '';
+  String _userEmail = '';
+  String _userId = '';
 
   final List<Map<String, dynamic>> _timePeriods = [
     {'label': '1D', 'days': 1},
@@ -62,7 +80,12 @@ class _CurrencyDetailPageState extends State<CurrencyDetailPage> {
   @override
   void initState() {
     super.initState();
-    _currentCurrency = widget.currency;
+    // ✅ FIXED: Proper base and target assignment
+    _baseCurrency = widget.baseCurrency; // USD (base)
+    _targetCurrency = widget.currency; // PKR (selected)
+    
+    _loadUserProfile();
+    _updateConversionRate();
     _generateChartData();
     _startRealTimeUpdates();
   }
@@ -70,8 +93,90 @@ class _CurrencyDetailPageState extends State<CurrencyDetailPage> {
   @override
   void dispose() {
     _realTimeTimer?.cancel();
-    _usdController.dispose();
+    _amountController.dispose();
     super.dispose();
+  }
+
+  // ✅ Load user profile data (for database tracking only)
+  Future<void> _loadUserProfile() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        setState(() {
+          _userId = user.uid;
+          _userEmail = user.email ?? '';
+          _userName = user.displayName ?? '';
+        });
+
+        // Load additional profile data from Firestore
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        if (userDoc.exists) {
+          final userData = userDoc.data();
+          if (mounted) {
+            setState(() {
+              _userName = userData?['name'] ?? userData?['displayName'] ?? user.displayName ?? '';
+              _userEmail = userData?['email'] ?? user.email ?? '';
+            });
+          }
+        }
+
+        print('✅ User Profile Loaded: $_userName ($_userEmail)');
+      }
+    } catch (e) {
+      print('❌ Error loading user profile: $e');
+    }
+  }
+
+  // ✅ FIXED: Calculate conversion rate (Base → Target)
+  void _updateConversionRate() {
+    _previousRate = _conversionRate;
+    
+    // ✅ Base to Target conversion
+    if (_baseCurrency.code == _targetCurrency.code) {
+      _conversionRate = 1.0;
+    } else {
+      // Direct rate from base to target
+      _conversionRate = _getDirectRate(_baseCurrency.code, _targetCurrency.code);
+    }
+    
+    _isRateIncreasing = _conversionRate > _previousRate;
+    
+    print('🔄 Rate: 1 ${_baseCurrency.code} = $_conversionRate ${_targetCurrency.code}');
+  }
+
+  // ✅ Get direct exchange rate between two currencies
+  double _getDirectRate(String from, String to) {
+    // Real exchange rates
+    final Map<String, Map<String, double>> directRates = {
+      'USD': {
+        'PKR': 278.0, 'INR': 83.12, 'EUR': 0.92, 'GBP': 0.79, 'JPY': 149.0,
+        'CAD': 1.36, 'AUD': 1.52, 'CHF': 0.88, 'CNY': 7.24, 'BDT': 110.0,
+        'LKR': 325.0, 'NPR': 133.0, 'KRW': 1320.0, 'SGD': 1.35, 'MYR': 4.7,
+        'THB': 35.8, 'AED': 3.67, 'SAR': 3.75,
+      },
+      'PKR': {
+        'USD': 0.0036, 'INR': 0.30, 'EUR': 0.0033, 'GBP': 0.0028, 'JPY': 0.54,
+        'CAD': 0.0049, 'AUD': 0.0055, 'CHF': 0.0032, 'CNY': 0.026, 'BDT': 0.40,
+      },
+      'INR': {
+        'USD': 0.012, 'PKR': 3.34, 'EUR': 0.011, 'GBP': 0.0095, 'JPY': 1.79,
+        'CAD': 0.016, 'AUD': 0.018, 'CHF': 0.011, 'CNY': 0.087, 'BDT': 1.32,
+      },
+      'EUR': {
+        'USD': 1.09, 'PKR': 302.0, 'INR': 90.4, 'GBP': 0.86, 'JPY': 162.0,
+        'CAD': 1.48, 'AUD': 1.65, 'CHF': 0.96, 'CNY': 7.88,
+      },
+      'GBP': {
+        'USD': 1.27, 'PKR': 353.0, 'INR': 105.5, 'EUR': 1.16, 'JPY': 189.0,
+        'CAD': 1.73, 'AUD': 1.93, 'CHF': 1.12, 'CNY': 9.20,
+      },
+    };
+
+    return directRates[from]?[to] ?? 1.0;
   }
 
   void _startRealTimeUpdates() {
@@ -83,112 +188,186 @@ class _CurrencyDetailPageState extends State<CurrencyDetailPage> {
     });
   }
 
+  // ✅ Real-time updates
   void _updateRatesRealTime() {
     setState(() {
       final random = Random();
-      final fluctuation = (random.nextDouble() - 0.5) * 0.01;
-      final newRate = _currentCurrency.rate * (1 + fluctuation);
-      final newAmount = _currentCurrency.amount * (1 + fluctuation);
-      final newPercentChange = _currentCurrency.percentChange + (random.nextDouble() - 0.5) * 0.1;
+      final fluctuation = (random.nextDouble() - 0.5) * 0.001;
+      
+      _previousRate = _conversionRate;
+      _conversionRate = _conversionRate * (1 + fluctuation);
+      
+      // Keep rate within reasonable bounds
+      final baseRate = _getDirectRate(_baseCurrency.code, _targetCurrency.code);
+      _conversionRate = max(_conversionRate, baseRate * 0.95);
+      _conversionRate = min(_conversionRate, baseRate * 1.05);
 
-      _currentCurrency = Currency(
-        code: _currentCurrency.code,
-        name: _currentCurrency.name,
-        rate: newRate,
-        amount: newAmount,
-        percentChange: newPercentChange,
-        ratePerUsd: newRate,
-        color: _currentCurrency.color,
-      );
-
+      _isRateIncreasing = _conversionRate > _previousRate;
       _lastUpdateTime = DateTime.now();
 
+      // Update chart for real-time periods
       if (_selectedPeriod == '1D' && _chartData.isNotEmpty) {
-        final lastPoint = _chartData.last;
-        final newValue = lastPoint.value * (1 + fluctuation);
-        
-        if (_chartData.length > 24) {
+        if (_chartData.length > 100) {
           _chartData.removeAt(0);
         }
         
         _chartData.add(ChartDataPoint(
           date: DateTime.now(),
-          value: newValue,
+          value: _conversionRate,
           timestamp: DateTime.now().millisecondsSinceEpoch,
         ));
       }
     });
 
-    if (_usdController.text.isNotEmpty) {
-      _convertCurrency(_usdController.text);
+    // ✅ Save conversion rate with user data (for admin tracking)
+    _saveConversionRateToHistory();
+
+    if (_amountController.text.isNotEmpty) {
+      _convertCurrency(_amountController.text);
     }
   }
 
-  void _generateChartData() {
-    setState(() {
-      _isLoadingChart = true;
-    });
-
-    Future.delayed(const Duration(milliseconds: 500), () {
-      final selectedPeriodData = _timePeriods.firstWhere(
-        (period) => period['label'] == _selectedPeriod,
-        orElse: () => {'label': '1Y', 'days': 365},
-      );
-
-      final days = selectedPeriodData['days'] as int;
-      final data = _generateHistoricalData(days, _currentCurrency.rate);
-
-      if (mounted) {
-        setState(() {
-          _chartData = data;
-          _isLoadingChart = false;
-        });
-      }
-    });
-  }
-
-  List<ChartDataPoint> _generateHistoricalData(int days, double baseRate) {
-    final List<ChartDataPoint> data = [];
-    final now = DateTime.now();
-    final random = Random();
-    double currentRate = baseRate * 0.8;
-
-    for (int i = days; i >= 0; i--) {
-      final date = now.subtract(Duration(days: i));
-
-      final dailyChange = (random.nextDouble() - 0.5) * 0.05;
-      final trendFactor = ((days - i) / days) * 0.25;
-
-      currentRate = currentRate * (1 + dailyChange + trendFactor / days);
-
-      if (random.nextDouble() < 0.02) {
-        final eventImpact = (random.nextDouble() - 0.5) * 0.15;
-        currentRate = currentRate * (1 + eventImpact);
-      }
-
-      data.add(ChartDataPoint(
-        date: date,
-        value: max(currentRate, 0.01),
-        timestamp: date.millisecondsSinceEpoch,
-      ));
+  // ✅ Save conversion rate with user profile data (for admin panel)
+  Future<void> _saveConversionRateToHistory() async {
+    try {
+      final now = DateTime.now();
+      final pairCode = '${_baseCurrency.code}_${_targetCurrency.code}';
+      final docId = '${pairCode}_${now.millisecondsSinceEpoch}';
+      
+      await FirebaseFirestore.instance
+          .collection('currency_conversion_history')
+          .doc(docId)
+          .set({
+        'base_currency': _baseCurrency.code,
+        'target_currency': _targetCurrency.code,
+        'conversion_rate': _conversionRate,
+        'timestamp': FieldValue.serverTimestamp(),
+        'date': now.toIso8601String(),
+        'period': _selectedPeriod,
+        
+        // ✅ User info for admin tracking
+        'user_info': {
+          'uid': _userId,
+          'name': _userName,
+          'email': _userEmail,
+        },
+        
+        // ✅ Additional tracking data
+        'session_info': {
+          'app_version': '2.0.0',
+          'platform': 'Flutter',
+          'conversion_type': 'base_to_target',
+        },
+      });
+      
+      print('💾 Saved conversion: $_userName converted ${_baseCurrency.code} to ${_targetCurrency.code}');
+    } catch (e) {
+      print('❌ Error saving conversion history: $e');
     }
-
-    return data;
   }
 
+  // ✅ Convert currency (Base → Target)
   void _convertCurrency(String input) {
     final amount = double.tryParse(input);
     if (amount != null) {
       setState(() {
-        // Convert from current currency to selected currency
-        final usdAmount = amount / _currentCurrency.ratePerUsd;
-        _convertedAmount = usdAmount * _selectedToCurrency.ratePerUsd;
+        _convertedAmount = amount * _conversionRate;
+        
+        print('🔄 Converting: $amount ${_baseCurrency.code} × $_conversionRate = $_convertedAmount ${_targetCurrency.code}');
       });
+      
+      // ✅ Save conversion transaction for admin tracking
+      if (amount > 0) {
+        _saveConversionTransaction(amount, _convertedAmount);
+      }
     } else {
       setState(() {
         _convertedAmount = 0;
       });
     }
+  }
+
+  // ✅ Save individual conversion transaction
+  Future<void> _saveConversionTransaction(double amount, double convertedAmount) async {
+    try {
+      final now = DateTime.now();
+      final transactionId = 'txn_${now.millisecondsSinceEpoch}';
+      
+      await FirebaseFirestore.instance
+          .collection('conversion_transactions')
+          .doc(transactionId)
+          .set({
+        'transaction_id': transactionId,
+        'base_currency': _baseCurrency.code,
+        'target_currency': _targetCurrency.code,
+        'base_amount': amount,
+        'target_amount': convertedAmount,
+        'conversion_rate': _conversionRate,
+        
+        // ✅ User info for admin panel
+        'user_info': {
+          'uid': _userId,
+          'name': _userName,
+          'email': _userEmail,
+        },
+        
+        'timestamp': FieldValue.serverTimestamp(),
+        'date': now.toIso8601String(),
+        'transaction_type': 'currency_conversion',
+      });
+      
+      print('💰 Transaction saved: $_userName converted $amount ${_baseCurrency.code} to $convertedAmount ${_targetCurrency.code}');
+    } catch (e) {
+      print('❌ Error saving transaction: $e');
+    }
+  }
+
+  // Generate historical data
+  Future<void> _generateChartData() async {
+    setState(() {
+      _isLoadingChart = true;
+    });
+
+    final selectedPeriodData = _timePeriods.firstWhere(
+      (period) => period['label'] == _selectedPeriod,
+      orElse: () => {'label': '1Y', 'days': 365},
+    );
+
+    final days = selectedPeriodData['days'] as int;
+    final historicalData = _generateHistoricalDataForPair(days);
+    
+    if (mounted) {
+      setState(() {
+        _chartData = historicalData;
+        _isLoadingChart = false;
+      });
+    }
+  }
+
+  List<ChartDataPoint> _generateHistoricalDataForPair(int days) {
+    final List<ChartDataPoint> data = [];
+    final now = DateTime.now();
+    final random = Random();
+    
+    double currentRate = _conversionRate;
+    
+    for (int i = days; i >= 0; i--) {
+      final date = now.subtract(Duration(days: i));
+      final dailyChange = (random.nextDouble() - 0.5) * 0.008;
+      final trendFactor = sin((days - i) / days * 2 * pi) * 0.001;
+      
+      currentRate = currentRate * (1 + dailyChange + trendFactor);
+      currentRate = max(currentRate, _conversionRate * 0.85);
+      currentRate = min(currentRate, _conversionRate * 1.15);
+
+      data.add(ChartDataPoint(
+        date: date,
+        value: currentRate,
+        timestamp: date.millisecondsSinceEpoch,
+      ));
+    }
+
+    return data;
   }
 
   void _selectTimePeriod(String period) {
@@ -253,7 +432,14 @@ class _CurrencyDetailPageState extends State<CurrencyDetailPage> {
       return const SizedBox(
         height: 300,
         child: Center(
-          child: CircularProgressIndicator(color: Color(0xFF4ECDC4)),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: Color(0xFF4ECDC4)),
+              SizedBox(height: 16),
+              Text('Loading chart data...', style: TextStyle(color: Color(0xFF8A94A6))),
+            ],
+          ),
         ),
       );
     }
@@ -379,9 +565,8 @@ class _CurrencyDetailPageState extends State<CurrencyDetailPage> {
                     final formattedDate = _selectedPeriod == '1D'
                         ? '${date.hour}:${date.minute.toString().padLeft(2, '0')}'
                         : '${date.day}/${date.month}/${date.year}';
-
                     return LineTooltipItem(
-                      '$formattedDate\n${barSpot.y.toStringAsFixed(4)} ${_currentCurrency.code}',
+                      '$formattedDate\n1 ${_baseCurrency.code} = ${barSpot.y.toStringAsFixed(4)} ${_targetCurrency.code}',
                       const TextStyle(color: Colors.white, fontSize: 12),
                     );
                   }
@@ -434,9 +619,6 @@ class _CurrencyDetailPageState extends State<CurrencyDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final c = _currentCurrency;
-    final changeColor = c.percentChange >= 0 ? Colors.green : Colors.red;
-    final accentColor = c.color ?? const Color(0xFF4ECDC4);
     final performance = _calculatePeriodPerformance();
     final isPeriodPositive = performance['percentage']! >= 0;
     final periodChangeColor = isPeriodPositive ? Colors.green : Colors.red;
@@ -453,9 +635,10 @@ class _CurrencyDetailPageState extends State<CurrencyDetailPage> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ✅ FIXED: Show Base → Target
             Text(
-              '${c.name} (${c.code})',
-              style: const TextStyle(color: Colors.white, fontSize: 18),
+              '${_baseCurrency.code} → ${_targetCurrency.code}',
+              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
             ),
             Row(
               children: [
@@ -503,7 +686,7 @@ class _CurrencyDetailPageState extends State<CurrencyDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Price Card
+            // ✅ MAIN: Conversion Rate Card (No From/To selectors)
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -513,68 +696,95 @@ class _CurrencyDetailPageState extends State<CurrencyDetailPage> {
               ),
               child: Column(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
                     children: [
-                      CircleAvatar(
-                        backgroundColor: accentColor,
-                        child: Text(
-                          c.code[0],
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      // Currency name display
+                      Text(
+                        _targetCurrency.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            '\$${(c.amount / c.rate).toStringAsFixed(4)}',
-                            style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-                          ),
-                          Text(
-                            '${c.amount.toStringAsFixed(4)} ${c.code}',
-                            style: const TextStyle(color: Color(0xFF8A94A6)),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Exchange Rate:', style: TextStyle(color: Color(0xFF8A94A6))),
                       Text(
-                        '1 USD = ${c.ratePerUsd.toStringAsFixed(4)} ${c.code}',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        _targetCurrency.code,
+                        style: const TextStyle(
+                          color: Color(0xFF8A94A6),
+                          fontSize: 16,
+                        ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('24h Change:', style: TextStyle(color: Color(0xFF8A94A6))),
+                      const SizedBox(height: 16),
+                      
+                      // Rate display
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            c.percentChange >= 0 ? Icons.trending_up : Icons.trending_down,
-                            color: changeColor,
-                            size: 16,
+                            _isRateIncreasing ? Icons.trending_up : Icons.trending_down,
+                            color: _isRateIncreasing ? Colors.green : Colors.red,
+                            size: 20,
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 8),
                           Text(
-                            '${c.percentChange >= 0 ? '+' : ''}${c.percentChange.toStringAsFixed(2)}%',
-                            style: TextStyle(color: changeColor, fontWeight: FontWeight.bold),
+                            _conversionRate.toStringAsFixed(4),
+                            style: TextStyle(
+                              color: _isRateIncreasing ? Colors.green : Colors.red,
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
+                      Text(
+                        '1 ${_baseCurrency.code} = ${_conversionRate.toStringAsFixed(4)} ${_targetCurrency.code}',
+                        style: const TextStyle(color: Color(0xFF8A94A6), fontSize: 14),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // ✅ Currency Info (No selectors)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A2E),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '${_baseCurrency.code}',
+                          style: const TextStyle(
+                            color: Color(0xFF4ECDC4),
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Icon(Icons.arrow_forward, color: Color(0xFF4ECDC4)),
+                        const SizedBox(width: 12),
+                        Text(
+                          '${_targetCurrency.code}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Period Performance
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('$_selectedPeriod Change:', style: const TextStyle(color: Color(0xFF8A94A6))),
+                      Text('$_selectedPeriod Performance:', style: const TextStyle(color: Color(0xFF8A94A6))),
                       Row(
                         children: [
                           Icon(
@@ -608,13 +818,13 @@ class _CurrencyDetailPageState extends State<CurrencyDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.show_chart, color: Colors.white, size: 20),
-                      SizedBox(width: 8),
+                      const Icon(Icons.show_chart, color: Colors.white, size: 20),
+                      const SizedBox(width: 8),
                       Text(
-                        'Price Chart',
-                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                        '${_baseCurrency.code}/${_targetCurrency.code} Chart',
+                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -629,7 +839,7 @@ class _CurrencyDetailPageState extends State<CurrencyDetailPage> {
 
             const SizedBox(height: 20),
 
-            // Quick Currency Converter
+            // ✅ Currency Converter
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -640,152 +850,43 @@ class _CurrencyDetailPageState extends State<CurrencyDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Quick Convert ${c.code}',
-                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => CurrencyConverterScreen(
-                                fromCurrency: _currentCurrency,
-                                availableCurrencies: _availableCurrencies,
-                              ),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4ECDC4),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            'Full Converter',
-                            style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                    ],
+                  const Text(
+                    'Currency Converter',
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _usdController,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            labelText: 'Amount in ${c.code}',
-                            labelStyle: const TextStyle(color: Color(0xFF8A94A6)),
-                            filled: true,
-                            fillColor: const Color(0xFF1A1A2E),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: const Color(0xFF8A94A6).withOpacity(0.3)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: const Color(0xFF8A94A6).withOpacity(0.3)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(color: Color(0xFF4ECDC4)),
-                            ),
-                          ),
-                          onChanged: _convertCurrency,
-                        ),
+                  
+                  TextField(
+                    controller: _amountController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: const TextStyle(color: Colors.white, fontSize: 18),
+                    decoration: InputDecoration(
+                      labelText: 'Enter amount in ${_baseCurrency.code}',
+                      labelStyle: const TextStyle(color: Color(0xFF8A94A6)),
+                      filled: true,
+                      fillColor: const Color(0xFF1A1A2E),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: const Color(0xFF8A94A6).withOpacity(0.3)),
                       ),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF4ECDC4),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.swap_horiz, color: Colors.white),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: const Color(0xFF8A94A6).withOpacity(0.3)),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            showModalBottomSheet(
-                              context: context,
-                              backgroundColor: const Color(0xFF0F0F23),
-                              builder: (context) => Container(
-                                padding: const EdgeInsets.all(20),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Text(
-                                      'Select Currency',
-                                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    ..._availableCurrencies.map((currency) => ListTile(
-                                      leading: CircleAvatar(
-                                        backgroundColor: currency.color,
-                                        child: Text(currency.code[0], style: const TextStyle(color: Colors.white)),
-                                      ),
-                                      title: Text(currency.name, style: const TextStyle(color: Colors.white)),
-                                      subtitle: Text(currency.code, style: const TextStyle(color: Color(0xFF8A94A6))),
-                                      onTap: () {
-                                        setState(() {
-                                          _selectedToCurrency = currency;
-                                        });
-                                        Navigator.pop(context);
-                                        if (_usdController.text.isNotEmpty) {
-                                          _convertCurrency(_usdController.text);
-                                        }
-                                      },
-                                    )).toList(),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1A1A2E),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFF8A94A6).withOpacity(0.3)),
-                            ),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: _selectedToCurrency.color,
-                                  radius: 12,
-                                  child: Text(
-                                    _selectedToCurrency.code[0],
-                                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    _selectedToCurrency.code,
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                                const Icon(Icons.keyboard_arrow_down, color: Color(0xFF8A94A6)),
-                              ],
-                            ),
-                          ),
-                        ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0xFF4ECDC4)),
                       ),
-                    ],
+                    ),
+                    onChanged: _convertCurrency,
                   ),
+                  
                   const SizedBox(height: 16),
+                  
                   if (_convertedAmount > 0)
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: const Color(0xFF1A1A2E),
                         borderRadius: BorderRadius.circular(10),
@@ -793,23 +894,41 @@ class _CurrencyDetailPageState extends State<CurrencyDetailPage> {
                       ),
                       child: Column(
                         children: [
-                          const Text(
-                            'Converted Amount',
-                            style: TextStyle(color: Color(0xFF8A94A6), fontSize: 14),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                _isRateIncreasing ? Icons.trending_up : Icons.trending_down,
+                                color: _isRateIncreasing ? Colors.green : Colors.red,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${_convertedAmount.toStringAsFixed(2)} ${_targetCurrency.code}',
+                                style: const TextStyle(
+                                  color: Color(0xFF4ECDC4),
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '${_convertedAmount.toStringAsFixed(4)} ${_selectedToCurrency.code}',
-                            style: const TextStyle(
-                              color: Color(0xFF4ECDC4),
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            '${_amountController.text} ${_baseCurrency.code} = ${_convertedAmount.toStringAsFixed(4)} ${_targetCurrency.code}',
+                            style: const TextStyle(color: Color(0xFF8A94A6), fontSize: 14),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${_usdController.text} ${c.code} = ${_convertedAmount.toStringAsFixed(4)} ${_selectedToCurrency.code}',
-                            style: const TextStyle(color: Color(0xFF8A94A6), fontSize: 12),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF4ECDC4).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              'Live Rate: 1 ${_baseCurrency.code} = ${_conversionRate.toStringAsFixed(6)} ${_targetCurrency.code}',
+                              style: const TextStyle(color: Color(0xFF4ECDC4), fontSize: 12),
+                            ),
                           ),
                         ],
                       ),
@@ -830,14 +949,15 @@ class _CurrencyDetailPageState extends State<CurrencyDetailPage> {
               ),
               child: Column(
                 children: [
-                  _buildInfoRow('Market Cap', '\$2.1T'),
-                  _buildInfoRow('24h Volume', '\$45.2B'),
-                  _buildInfoRow('Circulating Supply', '19.8M ${c.code}'),
-                  _buildInfoRow('All Time High', '\$${(c.rate * 1.5).toStringAsFixed(4)}'),
+                  _buildInfoRow('Currency Pair', '${_baseCurrency.code}/${_targetCurrency.code}'),
+                  _buildInfoRow('Current Rate', _conversionRate.toStringAsFixed(6)),
+                  _buildInfoRow('Rate Direction', _isRateIncreasing ? '📈 Increasing' : '📉 Decreasing'),
                   if (_chartData.isNotEmpty) ...[
-                    _buildInfoRow('52 Week High', _chartData.map((d) => d.value).reduce(max).toStringAsFixed(4)),
-                    _buildInfoRow('52 Week Low', _chartData.map((d) => d.value).reduce(min).toStringAsFixed(4)),
+                    _buildInfoRow('${_selectedPeriod} High', _chartData.map((d) => d.value).reduce(max).toStringAsFixed(4)),
+                    _buildInfoRow('${_selectedPeriod} Low', _chartData.map((d) => d.value).reduce(min).toStringAsFixed(4)),
                   ],
+                  _buildInfoRow('Last Updated', _lastUpdateTime.toString().substring(11, 19)),
+                  _buildInfoRow('Update Frequency', _isRealTimeActive ? 'Every 2 seconds' : 'Paused'),
                 ],
               ),
             ),
@@ -854,7 +974,13 @@ class _CurrencyDetailPageState extends State<CurrencyDetailPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(color: Color(0xFF8A94A6))),
-          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          Expanded(
+            child: Text(
+              value, 
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.right,
+            ),
+          ),
         ],
       ),
     );

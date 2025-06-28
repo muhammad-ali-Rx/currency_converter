@@ -7,6 +7,7 @@ import 'package:currency_converter/screen/news_screen.dart';
 import 'package:currency_converter/screen/notic_setting.dart';
 import 'package:currency_converter/screen/rate_alert.dart';
 import 'package:currency_converter/screen/notifications_inbox_screen.dart';
+import 'package:currency_converter/screen/admin/admin_dashboard.dart'; // Add this import
 import 'package:currency_converter/services/Enhanced_Notification.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -79,6 +80,8 @@ class FixedOverflowDrawer extends StatelessWidget {
                       () => _showProfileDialog(context),
                       Colors.blue,
                     ),
+                    // Admin Panel Button - Only for admin users
+                    _buildAdminPanelButton(context),
                     _buildCompactTile(
                       context,
                       Icons.settings_rounded,
@@ -121,6 +124,78 @@ class FixedOverflowDrawer extends StatelessWidget {
     );
   }
 
+  // Separate method for Admin Panel Button with proper checks
+  Widget _buildAdminPanelButton(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        // Multiple checks to ensure user is admin
+        final userData = authProvider.userData;
+        final isAdmin = userData != null && 
+                       (userData['isAdmin'] == true || 
+                        userData['role'] == 'admin' || 
+                        userData['userType'] == 'admin');
+        
+        // Only show button if user is admin
+        if (!isAdmin) {
+          return const SizedBox.shrink(); // Return empty widget
+        }
+        
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: Colors.red.withOpacity(0.05),
+            border: Border.all(
+              color: Colors.red.withOpacity(0.2),
+              width: 1,
+            ),
+          ),
+          child: ListTile(
+            dense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+            leading: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Icon(
+                Icons.admin_panel_settings_rounded, 
+                color: Colors.red, 
+                size: 18
+              ),
+            ),
+            title: const Text(
+              'Admin Panel',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600, // Make it bold for admin
+              ),
+            ),
+            subtitle: const Text(
+              'Admin Access',
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: 9,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            trailing: Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.red.withOpacity(0.7),
+              size: 12,
+            ),
+            onTap: () {
+              HapticFeedback.lightImpact();
+              _navigateToScreen(context, 'AdminPanel');
+            },
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildCompactHeader(BuildContext context, bool isSmallScreen) {
     final headerHeight = isSmallScreen ? 120.0 : 140.0;
     
@@ -155,15 +230,38 @@ class FixedOverflowDrawer extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              authProvider.userData?['name'] ?? 'User',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: isSmallScreen ? 16 : 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    authProvider.userData?['name'] ?? 'User',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: isSmallScreen ? 16 : 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                // Admin Badge in header
+                                if (_isUserAdmin(authProvider))
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.withOpacity(0.8),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Text(
+                                      'ADMIN',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                             const SizedBox(height: 2),
                             Container(
@@ -194,6 +292,15 @@ class FixedOverflowDrawer extends StatelessWidget {
         );
       },
     );
+  }
+
+  // Helper method to check if user is admin
+  bool _isUserAdmin(AuthProvider authProvider) {
+    final userData = authProvider.userData;
+    return userData != null && 
+           (userData['isAdmin'] == true || 
+            userData['role'] == 'admin' || 
+            userData['userType'] == 'admin');
   }
 
   Widget _buildCompactSection(String title, List<Widget> children) {
@@ -281,7 +388,6 @@ class FixedOverflowDrawer extends StatelessWidget {
       builder: (context, snapshot) {
         final notifications = snapshot.data ?? [];
         final unreadCount = notifications.where((n) => !n.isRead).length;
-
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -411,7 +517,6 @@ class FixedOverflowDrawer extends StatelessWidget {
 
   Widget _buildProfileAvatar(AuthProvider authProvider, double radius) {
     final profileImageBase64 = authProvider.userData?['profileImageBase64'];
-
     if (profileImageBase64 != null && profileImageBase64.isNotEmpty) {
       try {
         final bytes = base64Decode(profileImageBase64);
@@ -471,7 +576,7 @@ class FixedOverflowDrawer extends StatelessWidget {
     );
   }
 
-  // Navigation Helper
+  // Navigation Helper - Updated with AdminPanel case
   void _navigateToScreen(BuildContext context, String screenName) {
     Navigator.pop(context);
     
@@ -500,6 +605,16 @@ class FixedOverflowDrawer extends StatelessWidget {
         case 'Feedback':
           screen = const UserFeedbackScreen();
           break;
+        case 'AdminPanel':
+          // Check admin permission before navigation
+          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+          if (_isUserAdminStatic(authProvider)) {
+            screen = const AdminDashboard();
+          } else {
+            _showMessage(context, 'Access Denied: Admin privileges required');
+            return;
+          }
+          break;
         default:
           _showMessage(context, 'Screen not found: $screenName');
           return;
@@ -515,6 +630,15 @@ class FixedOverflowDrawer extends StatelessWidget {
       print('Navigation error: $e');
       _showMessage(context, 'Error opening $screenName');
     }
+  }
+
+  // Static helper method for admin check
+  bool _isUserAdminStatic(AuthProvider authProvider) {
+    final userData = authProvider.userData;
+    return userData != null && 
+           (userData['isAdmin'] == true || 
+            userData['role'] == 'admin' || 
+            userData['userType'] == 'admin');
   }
 
   void _showMessage(BuildContext context, String message) {

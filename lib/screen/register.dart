@@ -1,5 +1,5 @@
 import 'package:currency_converter/auth/auth_provider.dart';
-import 'package:currency_converter/screen/STEP.DART';
+import 'package:currency_converter/screen/profile_completion_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -18,6 +18,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Clear any previous errors when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      authProvider.clearError();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -474,11 +484,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  // FIXED: Improved login link navigation
   Widget _buildLoginLink() {
     return TextButton(
-      onPressed: () {
-        Navigator.pop(context);
-      },
+      onPressed: _navigateToLogin,
       child: RichText(
         text: const TextSpan(
           text: 'Already have an account? ',
@@ -497,10 +506,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  // FIXED: Proper navigation to login screen
+  void _navigateToLogin() {
+    if (!mounted) return;
+    
+    // Clear any errors before navigating
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    authProvider.clearError();
+    
+    // Check if we can pop (if login screen is in the stack)
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      // If we can't pop, push replacement to login screen
+      // You need to replace 'LoginScreen' with your actual login screen class
+      Navigator.pushReplacementNamed(context, '/login');
+      // Alternative: if you don't have named routes
+      // Navigator.pushReplacement(
+      //   context,
+      //   MaterialPageRoute(builder: (context) => const LoginScreen()),
+      // );
+    }
+  }
+
   void _handleRegister() async {
-    if (_formKey.currentState!.validate()) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
+    if (!_formKey.currentState!.validate()) return;
+    if (!mounted) return;
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    try {
       bool success = await authProvider.registerUser(
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
@@ -516,41 +551,66 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         );
 
+        // Small delay for better UX
         await Future.delayed(const Duration(milliseconds: 500));
 
         if (mounted) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => const ProfileCompletionScreen()
+              builder: (context) => const ProfileCompletionScreen(),
             ),
           );
         }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Registration failed: ${e.toString()}'),
+            backgroundColor: const Color(0xFFEF4444),
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     }
   }
 
   void _handleGoogleSignIn() async {
+    if (!mounted) return;
+    
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
-    bool success = await authProvider.signInWithGoogle();
-    
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Google sign-in successful! 🎉'),
-          backgroundColor: Color.fromARGB(255, 10, 108, 236),
-          duration: Duration(seconds: 2),
-        ),
-      );
+    try {
+      bool success = await authProvider.signInWithGoogle();
+      
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Google sign-in successful! 🎉'),
+            backgroundColor: Color.fromARGB(255, 10, 108, 236),
+            duration: Duration(seconds: 2),
+          ),
+        );
 
-      await Future.delayed(const Duration(milliseconds: 500));
+        await Future.delayed(const Duration(milliseconds: 500));
 
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ProfileCompletionScreen(),
+            ),
+          );
+        }
+      }
+    } catch (e) {
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const ProfileCompletionScreen()
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Google sign-in failed: ${e.toString()}'),
+            backgroundColor: const Color(0xFFEF4444),
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -558,26 +618,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _handleFacebookSignIn() async {
+    if (!mounted) return;
+    
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
-    bool success = await authProvider.signInWithFacebook();
-    
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Facebook sign-in successful! 🎉'),
-          backgroundColor: Color.fromARGB(255, 10, 108, 236),
-          duration: Duration(seconds: 2),
-        ),
-      );
+    try {
+      bool success = await authProvider.signInWithFacebook();
+      
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Facebook sign-in successful! 🎉'),
+            backgroundColor: Color.fromARGB(255, 10, 108, 236),
+            duration: Duration(seconds: 2),
+          ),
+        );
 
-      await Future.delayed(const Duration(milliseconds: 500));
+        await Future.delayed(const Duration(milliseconds: 500));
 
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ProfileCompletionScreen(),
+            ),
+          );
+        }
+      }
+    } catch (e) {
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const ProfileCompletionScreen()
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Facebook sign-in failed: ${e.toString()}'),
+            backgroundColor: const Color(0xFFEF4444),
+            duration: const Duration(seconds: 3),
           ),
         );
       }

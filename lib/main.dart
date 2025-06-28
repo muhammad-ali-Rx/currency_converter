@@ -1,17 +1,17 @@
 import 'package:currency_converter/auth/auth_provider.dart';
 import 'package:currency_converter/screen/login.dart';
+import 'package:currency_converter/screen/admin/admin_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
-
 import 'screen/splash.dart';
 import 'screen/mainscreen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  
   // Firebase initialization
   try {
     await Firebase.initializeApp(
@@ -27,10 +27,11 @@ void main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light, // Changed to light for dark theme
+      statusBarIconBrightness: Brightness.light,
     ),
   );
 
@@ -113,7 +114,7 @@ class _AppInitializerState extends State<AppInitializer> {
                   Text(
                     'Loading...',
                     style: TextStyle(
-                      color: Colors.white, 
+                      color: Colors.white,
                       fontSize: 16,
                     ),
                   ),
@@ -123,12 +124,17 @@ class _AppInitializerState extends State<AppInitializer> {
           );
         }
 
-        // Navigate based on auth state
+        // Navigate based on auth state and role
         if (authProvider.isAuthenticated) {
-          // User is logged in, show main currency converter app
-          return const Mainscreen();
+          // Check if user is admin
+          if (authProvider.isAdmin) {
+            return const AdminDashboard();
+          } else {
+            // Regular user - show main currency converter app
+            return const Mainscreen();
+          }
         } else {
-          // User is not logged in, show login screen
+          // User is not logged in - show login screen
           return const LoginScreen();
         }
       },

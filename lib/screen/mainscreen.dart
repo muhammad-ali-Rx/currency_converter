@@ -1,15 +1,18 @@
 import 'dart:math';
 import 'dart:convert';
 import 'dart:async';
-import 'package:currency_converter/model/currency.dart';
+import 'package:currency_converter/model/currency.dart'; // Make sure this file exists and defines the Currency class
 import 'package:currency_converter/screen/CurrencyDetailPage.dart';
 import 'package:currency_converter/screen/Stats.dart';
 import 'package:currency_converter/screen/convter.dart';
 import 'package:currency_converter/screen/edit_profile_screen.dart';
 import 'package:currency_converter/widgets/app_drawer.dart';
+import 'package:currency_converter/auth/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:fl_chart/fl_chart.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Mainscreen extends StatelessWidget {
   const Mainscreen({super.key});
@@ -34,37 +37,38 @@ class _WalletScreenState extends State<WalletScreen> {
   final List<Currency> currencies = [];
   final List<Currency> filteredCurrencies = [];
   bool isLoading = true;
-
   Timer? _realTimeTimer;
   DateTime _lastUpdateTime = DateTime.now();
   bool _isRealTimeActive = true;
 
+  // User's preferred currency data
+  String _userBaseCurrency = 'USD';
+  String _userBaseCurrencyName = 'US Dollar';
+  String _userCountryFlag = '🇺🇸';
+  String _userCountryName = 'United States';
+
   // Search functionality
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-
   String selectedSort = 'world Currency';
   String itemLabel = 'Currency';
-
   List<String> sortingOptions = ['world Currency'];
 
   // Carousel
   PageController _carouselController = PageController();
   int _currentCarouselIndex = 0;
   Timer? _carouselTimer;
-
   List<Currency> _randomCarouselItems = [];
 
   // Bottom navigation
   int _currentIndex = 0;
-  
-  // FIXED: Proper availableCurrencies getter
+
   List<Currency> get availableCurrencies => currencies.isNotEmpty ? currencies : <Currency>[];
 
   @override
   void initState() {
     super.initState();
-    _fetchCurrencyData();
+    _loadUserPreferences();
     _searchController.addListener(_onSearchChanged);
     _startRealTimeUpdates();
     _startCarouselAutoSlide();
@@ -80,15 +84,49 @@ class _WalletScreenState extends State<WalletScreen> {
     super.dispose();
   }
 
+  // Load user's preferred currency from Firestore
+  Future<void> _loadUserPreferences() async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final userId = authProvider.user?.uid;
+      
+      if (userId != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .get();
+            
+        if (userDoc.exists) {
+          final userData = userDoc.data();
+          if (mounted) {
+            setState(() {
+              _userBaseCurrency = userData?['preferredCurrency'] ?? 'USD';
+              _userBaseCurrencyName = userData?['preferredCurrencyName'] ?? 'US Dollar';
+              _userCountryFlag = userData?['countryFlag'] ?? '🇺🇸';
+              _userCountryName = userData?['country'] ?? 'United States';
+            });
+          }
+          
+          print('Loaded user preferences: $_userBaseCurrency');
+        }
+      }
+    } catch (e) {
+      print('Error loading user preferences: $e');
+      // Keep default values
+    }
+    
+    _fetchCurrencyData();
+  }
+
   void _startCarouselAutoSlide() {
-    _carouselTimer = Timer.periodic(Duration(seconds: 4), (timer) {
+    _carouselTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
       if (_carouselController.hasClients) {
         final topItems = _getTopItems();
         if (topItems.isNotEmpty) {
           _currentCarouselIndex = (_currentCarouselIndex + 1) % topItems.length;
           _carouselController.animateToPage(
             _currentCarouselIndex,
-            duration: Duration(milliseconds: 500),
+            duration: const Duration(milliseconds: 500),
             curve: Curves.easeInOut,
           );
         }
@@ -109,7 +147,7 @@ class _WalletScreenState extends State<WalletScreen> {
 
   void _startRealTimeUpdates() {
     _realTimeTimer?.cancel();
-    _realTimeTimer = Timer.periodic(Duration(seconds: 2), (timer) {
+    _realTimeTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
       if (_isRealTimeActive) {
         _updateRatesRealTime();
       }
@@ -121,7 +159,6 @@ class _WalletScreenState extends State<WalletScreen> {
 
     setState(() {
       _lastUpdateTime = DateTime.now();
-
       for (int i = 0; i < currencies.length; i++) {
         final random = Random();
         final fluctuationPercent = (random.nextDouble() - 0.5) * 0.01;
@@ -140,7 +177,6 @@ class _WalletScreenState extends State<WalletScreen> {
           color: currencies[i].color,
         );
       }
-
       _filterData();
     });
   }
@@ -182,20 +218,17 @@ class _WalletScreenState extends State<WalletScreen> {
     }
   }
 
+  // Fetch currency data based on user's preferred currency
   Future<void> _fetchCurrencyData() async {
-    const apiUrl =
-        'https://v6.exchangerate-api.com/v6/f23f645526cd179f30906490/latest/USD';
-
+    final apiUrl = 'https://v6.exchangerate-api.com/v6/f23f645526cd179f30906490/latest/$_userBaseCurrency';
+    
     try {
       final response = await http.get(Uri.parse(apiUrl));
-
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(response.body);
-
         if (jsonResponse['result'] == 'success') {
-          final rates =
-              jsonResponse['conversion_rates'] as Map<String, dynamic>;
-
+          final rates = jsonResponse['conversion_rates'] as Map<String, dynamic>;
+          
           final List<Map<String, String>> currencyData = [
             {'code': 'USD', 'name': 'US Dollar'},
             {'code': 'EUR', 'name': 'Euro'},
@@ -217,36 +250,32 @@ class _WalletScreenState extends State<WalletScreen> {
             {'code': 'HKD', 'name': 'Hong Kong Dollar'},
             {'code': 'NOK', 'name': 'Norwegian Krone'},
             {'code': 'MXN', 'name': 'Mexican Peso'},
+            {'code': 'BRL', 'name': 'Brazilian Real'},
+            {'code': 'RUB', 'name': 'Russian Ruble'},
+            {'code': 'ZAR', 'name': 'South African Rand'},
+            {'code': 'AED', 'name': 'UAE Dirham'},
+            {'code': 'SAR', 'name': 'Saudi Riyal'},
           ];
 
           final List<Color> colors = [
-            Colors.blue,
-            Colors.purple,
-            Colors.orange,
-            Colors.green,
-            Colors.red,
-            Colors.teal,
-            Colors.indigo,
-            Colors.pink,
-            Colors.amber,
-            Colors.cyan,
-            Colors.deepOrange,
-            Colors.lightGreen,
-            Colors.deepPurple,
-            Colors.brown,
-            Colors.blueGrey,
+            Colors.blue, Colors.purple, Colors.orange, Colors.green,
+            Colors.red, Colors.teal, Colors.indigo, Colors.pink,
+            Colors.amber, Colors.cyan, Colors.deepOrange, Colors.lightGreen,
+            Colors.deepPurple, Colors.brown, Colors.blueGrey,
           ];
 
           final random = Random();
           currencies.clear();
-
+          
           for (var data in currencyData) {
             final code = data['code']!;
-            final rate =
-                rates[code] != null ? (rates[code] as num).toDouble() : 1.0;
+            
+            // Skip if it's the same as user's base currency
+            if (code == _userBaseCurrency) continue;
+            
+            final rate = rates[code] != null ? (rates[code] as num).toDouble() : 1.0;
             final amount = 1 * rate;
-            final percentChange =
-                (random.nextDouble() * 1 * (random.nextBool() ? 1 : -1));
+            final percentChange = (random.nextDouble() * 1 * (random.nextBool() ? 1 : -1));
             final color = colors[random.nextInt(colors.length)];
 
             currencies.add(
@@ -261,6 +290,7 @@ class _WalletScreenState extends State<WalletScreen> {
               ),
             );
           }
+
           filteredCurrencies.addAll(currencies);
         }
       }
@@ -269,9 +299,11 @@ class _WalletScreenState extends State<WalletScreen> {
       _addMockCurrencyData();
     }
 
-    setState(() {
-      isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   void _addMockCurrencyData() {
@@ -289,12 +321,14 @@ class _WalletScreenState extends State<WalletScreen> {
       Colors.orange,
       Colors.green,
     ];
-    currencies.clear();
 
+    currencies.clear();
     for (var data in currencyData) {
+      // Skip user's base currency
+      if (data['code'] == _userBaseCurrency) continue;
+      
       final amount = 1.0;
-      final percentChange =
-          (random.nextDouble() * 1 * (random.nextBool() ? 1 : -1));
+      final percentChange = (random.nextDouble() * 1 * (random.nextBool() ? 1 : -1));
       final color = colors[random.nextInt(colors.length)];
 
       currencies.add(
@@ -309,13 +343,13 @@ class _WalletScreenState extends State<WalletScreen> {
         ),
       );
     }
+
     filteredCurrencies.addAll(currencies);
   }
 
   Widget _buildTopCurrenciesCarousel() {
     final topItems = _getTopItems();
-
-    if (topItems.isEmpty) return SizedBox.shrink();
+    if (topItems.isEmpty) return const SizedBox.shrink();
 
     return Container(
       margin: const EdgeInsets.all(20),
@@ -325,9 +359,9 @@ class _WalletScreenState extends State<WalletScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'Featured Currencies',
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -337,41 +371,37 @@ class _WalletScreenState extends State<WalletScreen> {
                 children: [
                   IconButton(
                     onPressed: () {
-                      if (_carouselController.hasClients &&
-                          topItems.isNotEmpty) {
+                      if (_carouselController.hasClients && topItems.isNotEmpty) {
                         _currentCarouselIndex =
-                            (_currentCarouselIndex - 1 + topItems.length) %
-                            topItems.length;
+                            (_currentCarouselIndex - 1 + topItems.length) % topItems.length;
                         _carouselController.animateToPage(
                           _currentCarouselIndex,
-                          duration: Duration(milliseconds: 300),
+                          duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut,
                         );
                       }
                     },
-                    icon: Icon(Icons.chevron_left, color: Colors.white54),
+                    icon: const Icon(Icons.chevron_left, color: Colors.white54),
                   ),
                   IconButton(
                     onPressed: () {
-                      if (_carouselController.hasClients &&
-                          topItems.isNotEmpty) {
-                        _currentCarouselIndex =
-                            (_currentCarouselIndex + 1) % topItems.length;
+                      if (_carouselController.hasClients && topItems.isNotEmpty) {
+                        _currentCarouselIndex = (_currentCarouselIndex + 1) % topItems.length;
                         _carouselController.animateToPage(
                           _currentCarouselIndex,
-                          duration: Duration(milliseconds: 300),
+                          duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut,
                         );
                       }
                     },
-                    icon: Icon(Icons.chevron_right, color: Colors.white54),
+                    icon: const Icon(Icons.chevron_right, color: Colors.white54),
                   ),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 16),
-          Container(
+          SizedBox(
             height: 200,
             child: PageView.builder(
               controller: _carouselController,
@@ -394,12 +424,10 @@ class _WalletScreenState extends State<WalletScreen> {
               return Container(
                 width: 8,
                 height: 8,
-                margin: EdgeInsets.symmetric(horizontal: 4),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: _currentCarouselIndex == entry.key
-                      ? Colors.blue
-                      : Colors.white38,
+                  color: _currentCarouselIndex == entry.key ? Colors.blue : Colors.white38,
                 ),
               );
             }).toList(),
@@ -419,16 +447,14 @@ class _WalletScreenState extends State<WalletScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 8),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [const Color(0xFF0F0F23), const Color(0xFF1A1A2E)],
+          colors: [Color(0xFF0F0F23), Color(0xFF1A1A2E)],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isPositive
-              ? Colors.green.withOpacity(0.3)
-              : Colors.red.withOpacity(0.3),
+          color: isPositive ? Colors.green.withOpacity(0.3) : Colors.red.withOpacity(0.3),
           width: 1,
         ),
         boxShadow: [
@@ -481,7 +507,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 ],
               ),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: _isRealTimeActive
                       ? Colors.green.withOpacity(0.2)
@@ -511,7 +537,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '\$${price.toStringAsFixed(4)}',
+                    '$_userBaseCurrency ${price.toStringAsFixed(4)}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 24,
@@ -528,10 +554,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: isPositive
                           ? Colors.green.withOpacity(0.2)
@@ -550,7 +573,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           size: 14,
                           color: isPositive ? Colors.green : Colors.red,
                         ),
-                        SizedBox(width: 4),
+                        const SizedBox(width: 4),
                         Text(
                           '${isPositive ? '+' : ''}${change.toStringAsFixed(2)}%',
                           style: TextStyle(
@@ -577,55 +600,55 @@ class _WalletScreenState extends State<WalletScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       decoration: BoxDecoration(
-        color: Color(0xFF0F0F23),
+        color: const Color(0xFF0F0F23),
         borderRadius: BorderRadius.circular(15),
         border: Border.all(color: Colors.white12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.2),
             blurRadius: 8,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: TextField(
         controller: _searchController,
-        style: TextStyle(color: Colors.white),
+        style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
           hintText: 'Search currencies...',
-          hintStyle: TextStyle(color: Colors.white38),
-          prefixIcon: Icon(Icons.search, color: Colors.white38),
+          hintStyle: const TextStyle(color: Colors.white38),
+          prefixIcon: const Icon(Icons.search, color: Colors.white38),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  icon: Icon(Icons.clear, color: Colors.white38),
+                  icon: const Icon(Icons.clear, color: Colors.white38),
                   onPressed: () => _searchController.clear(),
                 )
               : null,
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
         ),
       ),
     );
   }
 
   Widget _buildSearchResultsHeader() {
-    if (_searchQuery.isEmpty) return SizedBox.shrink();
+    if (_searchQuery.isEmpty) return const SizedBox.shrink();
 
     int resultCount = filteredCurrencies.length;
 
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      padding: EdgeInsets.all(12),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Color(0xFF0F0F23),
+        color: const Color(0xFF0F0F23),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.blue.withOpacity(0.3)),
       ),
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.all(8),
-            margin: EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.all(8),
+            margin: const EdgeInsets.only(right: 12),
             decoration: BoxDecoration(
               color: Colors.blue.withOpacity(0.2),
               shape: BoxShape.circle,
@@ -640,7 +663,7 @@ class _WalletScreenState extends State<WalletScreen> {
           Expanded(
             child: Text(
               'Found $resultCount result${resultCount != 1 ? 's' : ''} for "$_searchQuery"',
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w500,
                 fontSize: 14,
@@ -651,8 +674,8 @@ class _WalletScreenState extends State<WalletScreen> {
             GestureDetector(
               onTap: () => _searchController.clear(),
               child: Container(
-                padding: EdgeInsets.all(8),
-                margin: EdgeInsets.only(left: 8),
+                padding: const EdgeInsets.all(8),
+                margin: const EdgeInsets.only(left: 8),
                 decoration: BoxDecoration(
                   color: Colors.blue.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
@@ -684,12 +707,82 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   Widget _buildSortingHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'All World Currencies',
-          style: const TextStyle(
+        // User's base currency info
+        Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [const Color(0xFF4ECDC4).withOpacity(0.2), const Color(0xFF44A08D).withOpacity(0.2)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF4ECDC4).withOpacity(0.3)),
+          ),
+          child: Row(
+            children: [
+              Text(
+                _userCountryFlag,
+                style: const TextStyle(fontSize: 32),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Your Base Currency',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF8A94A6),
+                      ),
+                    ),
+                    Text(
+                      '$_userBaseCurrencyName ($_userBaseCurrency)',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                        color: Color(0xFF4ECDC4),
+                      ),
+                    ),
+                    Text(
+                      'All rates shown against $_userBaseCurrency',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF8A94A6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4ECDC4).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFF4ECDC4).withOpacity(0.5)),
+                ),
+                child: Text(
+                  _userCountryName,
+                  style: const TextStyle(
+                    color: Color(0xFF4ECDC4),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Exchange rates header
+        const Text(
+          'Exchange Rates',
+          style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 18,
             color: Colors.white,
@@ -699,13 +792,12 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  Widget _buildChart(currency) {
+  Widget _buildChart(Currency currency) {
     final random = Random();
-    final bool isPositive = (currency as Currency).percentChange >= 0;
+    final bool isPositive = currency.percentChange >= 0;
     final Color chartColor = isPositive ? Colors.green : Colors.red;
-
     final List<FlSpot> spots = [];
-    double baseRate = (currency as Currency).rate;
+    double baseRate = currency.rate;
 
     for (int i = 0; i < 24; i++) {
       if (i == 0) {
@@ -727,8 +819,8 @@ class _WalletScreenState extends State<WalletScreen> {
         width: 80,
         child: LineChart(
           LineChartData(
-            gridData: FlGridData(show: false),
-            titlesData: FlTitlesData(show: false),
+            gridData: const FlGridData(show: false),
+            titlesData: const FlTitlesData(show: false),
             borderData: FlBorderData(show: false),
             minY: spots.map((s) => s.y).reduce(min) * 0.98,
             maxY: spots.map((s) => s.y).reduce(max) * 1.02,
@@ -768,188 +860,194 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  Widget _buildCurrencyItem(currency) {
-    final isPositive = currency.percentChange >= 0;
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => CurrencyDetailPage(currency: currency),
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF0F0F23),
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(
-            color: isPositive
-                ? Colors.green.withOpacity(0.3)
-                : Colors.red.withOpacity(0.3),
-            width: 1,
+  Widget _buildCurrencyItem(Currency currency) {
+  final isPositive = currency.percentChange >= 0;
+  
+  return GestureDetector(
+    onTap: () {
+      // ✅ FIXED: Correct base currency pass karo
+      
+      // Create base currency object from user preferences
+      final baseCurrency = Currency(
+        code: _userBaseCurrency,
+        name: _userBaseCurrencyName,
+        rate: 1.0, // Base currency ka rate hamesha 1.0 hota hai
+        amount: 1.0,
+        percentChange: 0.0,
+        ratePerUsd: 1.0,
+        color: Colors.blue, // Default color for base currency
+      );
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CurrencyDetailPage(
+            currency: currency,        // ✅ Selected currency (PKR)
+            baseCurrency: baseCurrency, // ✅ User's base currency (USD)
           ),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AnimatedContainer(
-              duration: Duration(milliseconds: 500),
-              child: CircleAvatar(
-                backgroundColor: currency.color,
-                child: Text(
-                  currency.code[0],
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+      );
+    },
+    child: Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F0F23),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(
+          color: isPositive
+              ? Colors.green.withOpacity(0.3)
+              : Colors.red.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 500),
+            child: CircleAvatar(
+              backgroundColor: currency.color,
+              child: Text(
+                currency.code[0],
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        currency.name,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _isRealTimeActive
-                              ? Colors.green.withOpacity(0.2)
-                              : Colors.orange.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: _isRealTimeActive
-                                ? Colors.green
-                                : Colors.orange,
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          _isRealTimeActive ? 'LIVE' : 'PAUSED',
-                          style: TextStyle(
-                            color: _isRealTimeActive
-                                ? Colors.green
-                                : Colors.orange,
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  AnimatedDefaultTextStyle(
-                    duration: Duration(milliseconds: 300),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                      color: isPositive ? Colors.green : Colors.red,
-                    ),
-                    child: Text(
-                      '${currency.amount.toStringAsFixed(4)} ${currency.code}',
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '1 USD = ${currency.rate.toStringAsFixed(4)} ${currency.code}',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 14,
-                    ),
-                  ),
-                  Text(
-                    'Updated: ${_lastUpdateTime.toString().substring(11, 19)}',
-                    style: TextStyle(
-                      color: Colors.green.withOpacity(0.8),
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  children: [
+                    Text(
+                      currency.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: _isRealTimeActive
+                            ? Colors.green.withOpacity(0.2)
+                            : Colors.orange.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: _isRealTimeActive ? Colors.green : Colors.orange,
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        _isRealTimeActive ? 'LIVE' : 'PAUSED',
+                        style: TextStyle(
+                          color: _isRealTimeActive ? Colors.green : Colors.orange,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
                 AnimatedDefaultTextStyle(
-                  duration: Duration(milliseconds: 300),
+                  duration: const Duration(milliseconds: 300),
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 16,
                     color: isPositive ? Colors.green : Colors.red,
                   ),
                   child: Text(
-                    '\$${(currency.amount / currency.rate).toStringAsFixed(4)}',
+                    '${currency.amount.toStringAsFixed(4)} ${currency.code}',
                   ),
                 ),
                 const SizedBox(height: 4),
-                AnimatedContainer(
-                  duration: Duration(milliseconds: 300),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isPositive
-                        ? Colors.green.withOpacity(0.2)
-                        : Colors.red.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(
-                      color: isPositive ? Colors.green : Colors.red,
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isPositive ? Icons.trending_up : Icons.trending_down,
-                        size: 12,
-                        color: isPositive ? Colors.green : Colors.red,
-                      ),
-                      SizedBox(width: 2),
-                      Text(
-                        '${isPositive ? '+' : ''}${currency.percentChange.toStringAsFixed(2)}%',
-                        style: TextStyle(
-                          color: isPositive ? Colors.green : Colors.red,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+                Text(
+                  '1 $_userBaseCurrency = ${currency.rate.toStringAsFixed(4)} ${currency.code}',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 14,
                   ),
                 ),
-                const SizedBox(height: 4),
-                _buildChart(currency),
+                Text(
+                  'Updated: ${_lastUpdateTime.toString().substring(11, 19)}',
+                  style: TextStyle(
+                    color: Colors.green.withOpacity(0.8),
+                    fontSize: 10,
+                  ),
+                ),
               ],
             ),
-          ],
-        ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 300),
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: isPositive ? Colors.green : Colors.red,
+                ),
+                child: Text(
+                  '$_userBaseCurrency ${(1 / currency.rate).toStringAsFixed(4)}',
+                ),
+              ),
+              const SizedBox(height: 4),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isPositive
+                      ? Colors.green.withOpacity(0.2)
+                      : Colors.red.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: isPositive ? Colors.green : Colors.red,
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isPositive ? Icons.trending_up : Icons.trending_down,
+                      size: 12,
+                      color: isPositive ? Colors.green : Colors.red,
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      '${isPositive ? '+' : ''}${currency.percentChange.toStringAsFixed(2)}%',
+                      style: TextStyle(
+                        color: isPositive ? Colors.green : Colors.red,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 4),
+              _buildChart(currency),
+            ],
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildBottomNavBar() {
     return BottomNavigationBar(
-      backgroundColor: Color(0xFF0A0A1A),
-      selectedItemColor: Color(0xFF4ECDC4),
-      unselectedItemColor: Color(0xFF8A94A6),
+      backgroundColor: const Color(0xFF0A0A1A),
+      selectedItemColor: const Color(0xFF4ECDC4),
+      unselectedItemColor: const Color(0xFF8A94A6),
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.wallet), label: 'Wallet'),
         BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: 'Stats'),
@@ -960,7 +1058,6 @@ class _WalletScreenState extends State<WalletScreen> {
         setState(() {
           _currentIndex = index;
         });
-
         switch (index) {
           case 0:
             break;
@@ -991,8 +1088,8 @@ class _WalletScreenState extends State<WalletScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.search_off, size: 80, color: Colors.grey[400]),
-          SizedBox(height: 16),
-          Text(
+          const SizedBox(height: 16),
+          const Text(
             'No results found',
             style: TextStyle(
               fontSize: 18,
@@ -1000,26 +1097,25 @@ class _WalletScreenState extends State<WalletScreen> {
               color: Colors.white,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
             'Try searching with different keywords',
             style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () => _searchController.clear(),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
             ),
-            child: Text('Clear Search'),
+            child: const Text('Clear Search'),
           ),
         ],
       ),
     );
   }
 
-  // FIXED: Updated converter button with proper error handling
   Widget _buildConverterButton() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -1034,7 +1130,7 @@ class _WalletScreenState extends State<WalletScreen> {
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Please wait, currencies are loading...')),
+              const SnackBar(content: Text('Please wait, currencies are loading...')),
             );
           }
         },
@@ -1044,37 +1140,49 @@ class _WalletScreenState extends State<WalletScreen> {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Color(0xFF4ECDC4),
+          backgroundColor: const Color(0xFF4ECDC4),
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           elevation: 8,
-          shadowColor: Color(0xFF4ECDC4).withOpacity(0.3),
+          shadowColor: const Color(0xFF4ECDC4).withOpacity(0.3),
         ),
       ),
     );
   }
 
+  // Simple drawer fallback if FixedOverflowDrawer doesn't exist
+  
+
   @override
   Widget build(BuildContext context) {
     final currentList = filteredCurrencies;
-    final showNoResults =
-        _searchQuery.isNotEmpty && currentList.isEmpty && !isLoading;
+    final showNoResults = _searchQuery.isNotEmpty && currentList.isEmpty && !isLoading;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A1A),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0A0A1A),
         elevation: 0,
-        title: const Text(
-          'CurrenSee',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'CurrenSee',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              _userCountryFlag,
+              style: const TextStyle(fontSize: 20),
+            ),
+          ],
         ),
         centerTitle: true,
         leading: Builder(
@@ -1097,12 +1205,13 @@ class _WalletScreenState extends State<WalletScreen> {
             onPressed: _toggleRealTimeUpdates,
           ),
           IconButton(
-            icon: Icon(Icons.search, color: Color(0xFF8A94A6), size: 28),
-            onPressed: () => FocusScope.of(context).requestFocus(FocusNode()),
+            icon: const Icon(Icons.refresh, color: Color(0xFF8A94A6), size: 28),
+            onPressed: _fetchCurrencyData,
           ),
         ],
       ),
-      drawer: const FixedOverflowDrawer(),
+      // Use fallback drawer if FixedOverflowDrawer doesn't exist
+      drawer: FixedOverflowDrawer(),
       body: (isLoading)
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
@@ -1127,16 +1236,18 @@ class _WalletScreenState extends State<WalletScreen> {
                             child: _buildSortingHeader(),
                           );
                         }
-
                         final itemIndex = index - 5;
-                        final currency = filteredCurrencies[itemIndex];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 6,
-                          ),
-                          child: _buildCurrencyItem(currency),
-                        );
+                        if (itemIndex < filteredCurrencies.length) {
+                          final currency = filteredCurrencies[itemIndex];
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 6,
+                            ),
+                            child: _buildCurrencyItem(currency),
+                          );
+                        }
+                        return const SizedBox.shrink();
                       },
                     ),
             ),
