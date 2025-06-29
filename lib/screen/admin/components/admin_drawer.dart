@@ -1,17 +1,23 @@
 import 'package:currency_converter/screen/admin/components/All_Transactions.dart';
+import 'package:currency_converter/screen/admin/components/add_analysis_screen.dart';
+import 'package:currency_converter/screen/admin/components/add_article.dart';
+import 'package:currency_converter/screen/admin/components/add_chart_screen.dart';
+import 'package:currency_converter/screen/admin/components/add_trend_screen.dart';
+import 'package:currency_converter/screen/admin/components/manage_articles_screen.dart';
+import 'package:currency_converter/screen/admin/components/manage_transaction.dart';
 import 'package:currency_converter/screen/mainscreen.dart';
 import 'package:currency_converter/auth/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../utils/modern_constants.dart';
+import '../../../utils/modern_constants.dart' as modern_constants;
 import 'dart:convert';
 
-class ResponsiveSidebar extends StatefulWidget {
+class AdminDrawer extends StatefulWidget {
   final int selectedIndex;
   final Function(int) onItemSelected;
   final bool isMobile;
 
-  const ResponsiveSidebar({
+  const AdminDrawer({
     super.key,
     required this.selectedIndex,
     required this.onItemSelected,
@@ -19,39 +25,65 @@ class ResponsiveSidebar extends StatefulWidget {
   });
 
   @override
-  State<ResponsiveSidebar> createState() => _ResponsiveSidebarState();
+  State<AdminDrawer> createState() => _AdminDrawerState();
 }
 
-class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
+class _AdminDrawerState extends State<AdminDrawer> {
   final Map<int, bool> _expandedSections = {};
 
-  // ✅ UPDATED: Added Delete Transactions option
   final List<Map<String, dynamic>> _menuItems = [
     {
       'icon': Icons.dashboard_rounded,
       'title': 'Dashboard',
       'index': 1,
       'hasSubmenu': false,
+      'color': modern_constants.ModernConstants.primaryPurple,
     },
     {
       'icon': Icons.people_rounded,
       'title': 'Users',
       'index': 2,
       'hasSubmenu': true,
+      'color': Colors.blue,
       'submenu': [
         {'title': 'Show Users', 'index': 2},
         {'title': 'Add User', 'index': 2},
       ],
     },
-    // ✅ UPDATED: Normal styling for User Transactions
     {
       'icon': Icons.receipt_long_rounded,
       'title': 'User Transactions',
       'index': 10,
       'hasSubmenu': true,
+      'color': Colors.green,
       'submenu': [
         {'title': 'All Transactions', 'index': 101},
-        {'title': 'Delete Transactions', 'index': 105}, // ✅ NEW: Delete option
+        {'title': 'Manage Transactions', 'index': 102},
+        {'title': 'Delete Transactions', 'index': 105},
+      ],
+    },
+    {
+      'icon': Icons.article_rounded,
+      'title': 'News Management',
+      'index': 20,
+      'hasSubmenu': true,
+      'color': Colors.purple,
+      'submenu': [
+        {'title': 'Add Article', 'index': 202},
+        {'title': 'Manage Articles', 'index': 203},
+      ],
+    },
+    {
+      'icon': Icons.trending_up_rounded,
+      'title': 'Market Data',
+      'index': 30,
+      'hasSubmenu': true,
+      'color': Colors.orange,
+      'submenu': [
+        {'title': 'Add Trend', 'index': 301},
+        {'title': 'Add Analysis', 'index': 302},
+        {'title': 'Add Chart', 'index': 303},
+        {'title': 'Manage Market Data', 'index': 304},
       ],
     },
     {
@@ -59,6 +91,7 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
       'title': 'Settings',
       'index': 3,
       'hasSubmenu': true,
+      'color': Colors.teal,
       'submenu': [
         {'title': 'Show Settings', 'index': 3},
         {'title': 'Add Settings', 'index': 3},
@@ -69,44 +102,35 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
       'title': 'Rate Alerts',
       'index': 4,
       'hasSubmenu': true,
+      'color': Colors.indigo,
       'submenu': [
         {'title': 'Show Alerts', 'index': 4},
         {'title': 'Add Alert', 'index': 4},
       ],
     },
     {
-      'icon': Icons.article_rounded,
-      'title': 'Currency News',
-      'index': 5,
-      'hasSubmenu': false,
-    },
-    {
-      'icon': Icons.trending_up_rounded,
-      'title': 'Market Trends',
-      'index': 6,
-      'hasSubmenu': false,
-    },
-    {
       'icon': Icons.notifications_rounded,
       'title': 'App Notifications',
       'index': 7,
       'hasSubmenu': false,
+      'color': Colors.pink,
     },
     {
       'icon': Icons.help_center_rounded,
       'title': 'User Support',
       'index': 8,
       'hasSubmenu': false,
+      'color': Colors.amber,
     },
     {
       'icon': Icons.feedback_rounded,
       'title': 'User Feedback',
       'index': 9,
       'hasSubmenu': false,
+      'color': Colors.cyan,
     },
   ];
 
-  // ✅ UPDATED: Navigation handler with Delete Transactions
   void _handleNavigation(int index, String? title) {
     switch (index) {
       case 101: // All Transactions
@@ -117,17 +141,59 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
           ),
         );
         break;
-      case 102: // Currency Conversions
-        _showComingSoonDialog('Currency Conversions');
-        break;
-      case 103: // Transaction History
-        _showComingSoonDialog('Transaction History');
-        break;
-      case 104: // User Activity
-        _showComingSoonDialog('User Activity');
+      case 102: // Manage Transactions
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ManageTransactionsScreen(),
+          ),
+        );
         break;
       case 105: // Delete Transactions
         _showDeleteTransactionsDialog();
+        break;
+      case 202: // Add Article
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AddArticleScreen(),
+          ),
+        );
+        break;
+      case 203: // Manage Articles
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ManageArticlesScreen(),
+          ),
+        );
+        break;
+      case 301: // Add Trend
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AddTrendScreen(),
+          ),
+        );
+        break;
+      case 302: // Add Analysis
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AddAnalysisScreen(),
+          ),
+        );
+        break;
+      case 303: // Add Chart
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AddChartScreen(),
+          ),
+        );
+        break;
+      case 304: // Manage Market Data
+        _showComingSoonDialog('Manage Market Data');
         break;
       default:
         widget.onItemSelected(index);
@@ -135,12 +201,11 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
     }
   }
 
-  // ✅ NEW: Delete Transactions Dialog
   void _showDeleteTransactionsDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: ModernConstants.cardBackground,
+        backgroundColor: modern_constants.ModernConstants.cardBackground,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -159,60 +224,30 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
               ),
             ),
             const SizedBox(width: 12),
-            const Text(
+            Text(
               'Delete Transactions',
               style: TextStyle(
-                color: ModernConstants.textPrimary,
+                color: modern_constants.ModernConstants.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Choose what type of transactions you want to delete:',
-              style: TextStyle(
-                color: ModernConstants.textSecondary,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 16),
-            // Delete Options
-            _buildDeleteOption(
-              'Delete All Transactions',
-              'Remove all transaction records',
-              Icons.delete_sweep_rounded,
-              Colors.red,
-              () => _confirmDelete('All Transactions'),
-            ),
-            const SizedBox(height: 8),
-            _buildDeleteOption(
-              'Delete Old Transactions',
-              'Remove transactions older than 30 days',
-              Icons.history_rounded,
-              Colors.orange,
-              () => _confirmDelete('Old Transactions'),
-            ),
-            const SizedBox(height: 8),
-            _buildDeleteOption(
-              'Delete Failed Transactions',
-              'Remove failed/incomplete transactions',
-              Icons.error_outline_rounded,
-              Colors.amber,
-              () => _confirmDelete('Failed Transactions'),
-            ),
-          ],
+        content: const Text(
+          'This feature is coming soon.',
+          style: TextStyle(
+            color: modern_constants.ModernConstants.textSecondary,
+            fontSize: 14,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text(
-              'Cancel',
+              'OK',
               style: TextStyle(
-                color: ModernConstants.textSecondary,
+                color: modern_constants.ModernConstants.textSecondary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -220,254 +255,13 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
         ],
       ),
     );
-  }
-
-  // ✅ NEW: Delete Option Widget
-  Widget _buildDeleteOption(String title, String subtitle, IconData icon, Color color, VoidCallback onTap) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: color.withOpacity(0.3),
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                color: color,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: color.withOpacity(0.8),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                color: color.withOpacity(0.6),
-                size: 14,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ✅ NEW: Confirm Delete Dialog
-  void _confirmDelete(String type) {
-    Navigator.of(context).pop(); // Close first dialog
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: ModernConstants.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.warning_rounded,
-                color: Colors.red,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Confirm Delete',
-              style: TextStyle(
-                color: Colors.red,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Are you sure you want to delete $type?',
-              style: const TextStyle(
-                color: ModernConstants.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'This action cannot be undone and will permanently remove the selected transactions from the database.',
-              style: TextStyle(
-                color: ModernConstants.textSecondary,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Colors.red.withOpacity(0.3),
-                ),
-              ),
-              child: const Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: Colors.red,
-                    size: 16,
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Warning: This will permanently delete data!',
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(
-                color: ModernConstants.textSecondary,
-                fontSize: 14,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _performDelete(type);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text(
-              'Delete',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ✅ NEW: Perform Delete Operation
-  void _performDelete(String type) {
-    // Show loading dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: ModernConstants.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(
-              color: Colors.red,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Deleting $type...',
-              style: const TextStyle(
-                color: ModernConstants.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Please wait while we process your request.',
-              style: TextStyle(
-                color: ModernConstants.textSecondary,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    // Simulate delete operation
-    Future.delayed(const Duration(seconds: 2), () {
-      Navigator.of(context).pop(); // Close loading dialog
-      
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$type deleted successfully!'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 3),
-          action: SnackBarAction(
-            label: 'OK',
-            textColor: Colors.white,
-            onPressed: () {},
-          ),
-        ),
-      );
-    });
   }
 
   void _showComingSoonDialog(String feature) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: ModernConstants.cardBackground,
+        backgroundColor: modern_constants.ModernConstants.cardBackground,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -476,12 +270,12 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: ModernConstants.primaryPurple.withOpacity(0.2),
+                color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 Icons.construction_rounded,
-                color: ModernConstants.primaryPurple,
+                color: modern_constants.ModernConstants.primaryPurple,
                 size: 20,
               ),
             ),
@@ -489,7 +283,7 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
             const Text(
               'Coming Soon',
               style: TextStyle(
-                color: ModernConstants.textPrimary,
+                color: modern_constants.ModernConstants.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -502,7 +296,7 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
             Text(
               '$feature feature is under development.',
               style: const TextStyle(
-                color: ModernConstants.textSecondary,
+                color: modern_constants.ModernConstants.textSecondary,
                 fontSize: 14,
               ),
             ),
@@ -510,17 +304,17 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: ModernConstants.primaryPurple.withOpacity(0.1),
+                color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: ModernConstants.primaryPurple.withOpacity(0.3),
+                  color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.3),
                 ),
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.info_outline,
-                    color: ModernConstants.primaryPurple,
+                    color: modern_constants.ModernConstants.primaryPurple,
                     size: 16,
                   ),
                   const SizedBox(width: 8),
@@ -528,7 +322,7 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
                     child: Text(
                       'This feature will be available in the next update.',
                       style: TextStyle(
-                        color: ModernConstants.primaryPurple,
+                        color: modern_constants.ModernConstants.primaryPurple,
                         fontSize: 12,
                       ),
                     ),
@@ -544,7 +338,7 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
             child: Text(
               'OK',
               style: TextStyle(
-                color: ModernConstants.primaryPurple,
+                color: modern_constants.ModernConstants.primaryPurple,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -564,8 +358,8 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            ModernConstants.sidebarBackground,
-            ModernConstants.sidebarBackground.withOpacity(0.95),
+            modern_constants.ModernConstants.sidebarBackground,
+            modern_constants.ModernConstants.sidebarBackground.withOpacity(0.95),
             const Color(0xFF1a1a2e),
           ],
         ),
@@ -591,7 +385,7 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: ModernConstants.textTertiary.withOpacity(0.1),
+            color: modern_constants.ModernConstants.textTertiary.withOpacity(0.1),
           ),
         ),
       ),
@@ -601,7 +395,7 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              gradient: ModernConstants.primaryGradient,
+              gradient: modern_constants.ModernConstants.primaryGradient,
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
@@ -619,7 +413,7 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
                 Text(
                   'CurrencyAdmin',
                   style: TextStyle(
-                    color: ModernConstants.textPrimary,
+                    color: modern_constants.ModernConstants.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -627,7 +421,7 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
                 Text(
                   'Admin Dashboard',
                   style: TextStyle(
-                    color: ModernConstants.textSecondary,
+                    color: modern_constants.ModernConstants.textSecondary,
                     fontSize: 11,
                   ),
                 ),
@@ -647,11 +441,13 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
         final item = _menuItems[index];
         final isSelected = widget.selectedIndex == item['index'];
         final isExpanded = _expandedSections[item['index']] ?? false;
+        final color = item['color'] as Color;
 
         return Column(
           children: [
-            _buildMenuItem(item, isSelected, isExpanded),
-            if (isExpanded && item['hasSubmenu'] == true) _buildSubmenu(item),
+            _buildMenuItem(item, isSelected, isExpanded, color),
+            if (isExpanded && item['hasSubmenu'] == true) 
+              _buildSubmenu(item, color),
           ],
         );
       },
@@ -662,8 +458,8 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
     Map<String, dynamic> item,
     bool isSelected,
     bool isExpanded,
+    Color color,
   ) {
-    // ✅ REMOVED: Special transaction item styling - now normal
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
       child: Material(
@@ -682,11 +478,14 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              gradient: isSelected ? ModernConstants.primaryGradient : null,
+              gradient: isSelected ? modern_constants.ModernConstants.primaryGradient : null,
               color: isExpanded && !isSelected
-                  ? ModernConstants.primaryPurple.withOpacity(0.1)
+                  ? color.withOpacity(0.1)
                   : null,
               borderRadius: BorderRadius.circular(12),
+              border: isExpanded
+                  ? Border.all(color: color.withOpacity(0.3))
+                  : null,
             ),
             child: Row(
               children: [
@@ -695,8 +494,8 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
                   color: isSelected
                       ? Colors.white
                       : isExpanded
-                          ? ModernConstants.primaryPurple
-                          : ModernConstants.textSecondary,
+                          ? color
+                          : modern_constants.ModernConstants.textSecondary,
                   size: 20,
                 ),
                 const SizedBox(width: 12),
@@ -707,8 +506,8 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
                       color: isSelected
                           ? Colors.white
                           : isExpanded
-                              ? ModernConstants.textPrimary
-                              : ModernConstants.textSecondary,
+                              ? modern_constants.ModernConstants.textPrimary
+                              : modern_constants.ModernConstants.textSecondary,
                       fontSize: 14,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                     ),
@@ -722,8 +521,8 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
                     color: isSelected
                         ? Colors.white
                         : isExpanded
-                            ? ModernConstants.primaryPurple
-                            : ModernConstants.textSecondary,
+                            ? color
+                            : modern_constants.ModernConstants.textSecondary,
                     size: 16,
                   ),
               ],
@@ -734,7 +533,7 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
     );
   }
 
-  Widget _buildSubmenu(Map<String, dynamic> item) {
+  Widget _buildSubmenu(Map<String, dynamic> item, Color color) {
     final submenuItems = item['submenu'] as List<Map<String, dynamic>>? ?? [];
 
     return Container(
@@ -742,14 +541,13 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
       decoration: BoxDecoration(
         border: Border(
           left: BorderSide(
-            color: ModernConstants.primaryPurple.withOpacity(0.3),
+            color: color.withOpacity(0.3),
             width: 2,
           ),
         ),
       ),
       child: Column(
         children: submenuItems.map((submenuItem) {
-          // ✅ Special styling for Delete Transactions
           final isDeleteItem = submenuItem['index'] == 105;
           
           return Material(
@@ -767,7 +565,7 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
                 decoration: BoxDecoration(
                   color: isDeleteItem 
                     ? Colors.red.withOpacity(0.1)
-                    : null,
+                    : color.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -778,17 +576,17 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
                       decoration: BoxDecoration(
                         color: isDeleteItem
                           ? Colors.red.withOpacity(0.8)
-                          : ModernConstants.primaryPurple.withOpacity(0.6),
+                          : color.withOpacity(0.8),
                         shape: BoxShape.circle,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Icon(
-                      _getTransactionSubmenuIcon(submenuItem['title']),
+                      _getSubmenuIcon(submenuItem['title']),
                       size: 12,
                       color: isDeleteItem
                         ? Colors.red.withOpacity(0.7)
-                        : ModernConstants.primaryPurple.withOpacity(0.7),
+                        : color.withOpacity(0.7),
                     ),
                     const SizedBox(width: 6),
                     Expanded(
@@ -797,18 +595,17 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
                         style: TextStyle(
                           color: isDeleteItem
                             ? Colors.red
-                            : ModernConstants.textSecondary,
+                            : color,
                           fontSize: 12,
-                          fontWeight: isDeleteItem ? FontWeight.w500 : FontWeight.normal,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
-                    if (submenuItem['index'] == 101) // All Transactions arrow
-                      Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 10,
-                        color: ModernConstants.primaryPurple.withOpacity(0.6),
-                      ),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 10,
+                      color: color.withOpacity(0.6),
+                    ),
                   ],
                 ),
               ),
@@ -819,24 +616,43 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
     );
   }
 
-  IconData _getTransactionSubmenuIcon(String title) {
+  IconData _getSubmenuIcon(String title) {
     switch (title) {
       case 'All Transactions':
         return Icons.list_alt_rounded;
-      case 'Currency Conversions':
-        return Icons.currency_exchange_rounded;
-      case 'Transaction History':
-        return Icons.history_rounded;
-      case 'User Activity':
-        return Icons.person_search_rounded;
+      case 'Manage Transactions':
+        return Icons.manage_accounts_rounded;
       case 'Delete Transactions':
         return Icons.delete_forever_rounded;
+      case 'Add Article':
+        return Icons.add_circle_outline_rounded;
+      case 'Manage Articles':
+        return Icons.edit_note_rounded;
+      case 'Add Trend':
+        return Icons.trending_up_rounded;
+      case 'Add Analysis':
+        return Icons.analytics_rounded;
+      case 'Add Chart':
+        return Icons.show_chart_rounded;
+      case 'Manage Market Data':
+        return Icons.data_usage_rounded;
+      case 'Show Users':
+        return Icons.people_alt_rounded;
+      case 'Add User':
+        return Icons.person_add_rounded;
+      case 'Show Settings':
+        return Icons.settings_display_rounded;
+      case 'Add Settings':
+        return Icons.settings_suggest_rounded;
+      case 'Show Alerts':
+        return Icons.notifications_active_rounded;
+      case 'Add Alert':
+        return Icons.add_alert_rounded;
       default:
         return Icons.circle;
     }
   }
 
-  // Rest of the methods remain the same...
   Widget _buildUserPanelButton() {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -962,7 +778,7 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(color: ModernConstants.textTertiary.withOpacity(0.1)),
+          top: BorderSide(color: modern_constants.ModernConstants.textTertiary.withOpacity(0.1)),
         ),
       ),
       child: Column(
@@ -978,7 +794,7 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
               return Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: ModernConstants.textTertiary.withOpacity(0.1),
+                  color: modern_constants.ModernConstants.textTertiary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
@@ -992,7 +808,7 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
                         ),
                         borderRadius: BorderRadius.circular(8),
                         border: userAvatar.isNotEmpty ? Border.all(
-                          color: ModernConstants.primaryPurple.withOpacity(0.3),
+                          color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.3),
                           width: 1,
                         ) : null,
                       ),
@@ -1020,7 +836,7 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
                           Text(
                             userName,
                             style: const TextStyle(
-                              color: ModernConstants.textPrimary,
+                              color: modern_constants.ModernConstants.textPrimary,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1030,7 +846,7 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
                           Text(
                             userEmail,
                             style: const TextStyle(
-                              color: ModernConstants.textSecondary,
+                              color: modern_constants.ModernConstants.textSecondary,
                               fontSize: 10,
                             ),
                             maxLines: 1,
@@ -1051,13 +867,13 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
               Icon(
                 Icons.info_outline_rounded,
                 size: 12,
-                color: ModernConstants.textTertiary,
+                color: modern_constants.ModernConstants.textTertiary,
               ),
               const SizedBox(width: 4),
               Text(
                 'Version 1.0.0',
                 style: TextStyle(
-                  color: ModernConstants.textTertiary,
+                  color: modern_constants.ModernConstants.textTertiary,
                   fontSize: 10,
                 ),
               ),
@@ -1068,13 +884,14 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
     );
   }
 
+  // FIXED: Simplified logout dialog - let AuthProvider handle navigation automatically
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          backgroundColor: ModernConstants.cardBackground,
+          backgroundColor: modern_constants.ModernConstants.cardBackground,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -1096,7 +913,7 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
               const Text(
                 'Admin Logout',
                 style: TextStyle(
-                  color: ModernConstants.textPrimary,
+                  color: modern_constants.ModernConstants.textPrimary,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -1110,7 +927,7 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
               const Text(
                 'Are you sure you want to logout from Admin Panel?',
                 style: TextStyle(
-                  color: ModernConstants.textSecondary,
+                  color: modern_constants.ModernConstants.textSecondary,
                   fontSize: 14,
                 ),
               ),
@@ -1134,7 +951,7 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
-                        'You will be redirected to the main app',
+                        'You will be redirected to the login screen',
                         style: TextStyle(
                           color: Colors.orange,
                           fontSize: 12,
@@ -1155,7 +972,7 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
               child: const Text(
                 'Cancel',
                 style: TextStyle(
-                  color: ModernConstants.textSecondary,
+                  color: modern_constants.ModernConstants.textSecondary,
                   fontSize: 14,
                 ),
               ),
@@ -1167,26 +984,20 @@ class _ResponsiveSidebarState extends State<ResponsiveSidebar> {
                       ? null
                       : () async {
                           try {
+                            // Close the dialog first
                             Navigator.of(dialogContext).pop();
-                            await authProvider.logoutUser();
                             
-                            if (context.mounted) {
-                              Navigator.of(context).pushAndRemoveUntil(
-                                MaterialPageRoute(
-                                  builder: (context) => const Mainscreen(),
-                                ),
-                                (route) => false,
-                              );
-                              
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Admin logged out successfully!'),
-                                  backgroundColor: Color(0xFF10B981),
-                                  duration: Duration(seconds: 2),
-                                ),
-                              );
+                            // Perform logout - AuthProvider will handle navigation automatically
+                            bool success = await authProvider.logoutUser();
+                            
+                            // Show success message only if logout was successful
+                            // Note: We don't need to navigate manually as AuthProvider handles it
+                            if (success) {
+                              print('✅ Admin logout successful - AuthProvider will handle navigation');
                             }
                           } catch (e) {
+                            print('❌ Logout error: $e');
+                            // Only show error if something goes wrong
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(

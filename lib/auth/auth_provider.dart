@@ -64,6 +64,7 @@ class AuthProvider extends ChangeNotifier {
 
   // Handle Firebase auth state changes
   void _onAuthStateChanged(User? user) async {
+    print('Auth state changed: ${user?.uid}');
     _user = user;
     if (user != null) {
       _isLoggedIn = true;
@@ -251,10 +252,12 @@ class AuthProvider extends ChangeNotifier {
     try {
       setLoading(true);
       clearError();
+
       final UserCredential result = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+
       if (result.user != null) {
         _user = result.user;
         await _user!.updateDisplayName(name);
@@ -265,6 +268,7 @@ class AuthProvider extends ChangeNotifier {
         notifyListeners();
         return true;
       }
+
       setLoading(false);
       return false;
     } catch (e) {
@@ -282,10 +286,12 @@ class AuthProvider extends ChangeNotifier {
     try {
       setLoading(true);
       clearError();
+
       final UserCredential result = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+
       if (result.user != null) {
         _user = result.user;
         await _loadUserDataFromFirestore();
@@ -295,6 +301,7 @@ class AuthProvider extends ChangeNotifier {
         notifyListeners();
         return true;
       }
+
       setLoading(false);
       return false;
     } catch (e) {
@@ -304,11 +311,12 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Google Sign In (SIMPLIFIED)
+  // Google Sign In
   Future<bool> signInWithGoogle() async {
     try {
       setLoading(true);
       clearError();
+
       // For web, check if Google Sign-In is ready
       if (kIsWeb && !_isGoogleSignInReady()) {
         setError('Google Sign-In not ready. Please refresh the page and try again.');
@@ -317,6 +325,7 @@ class AuthProvider extends ChangeNotifier {
       }
 
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
       if (googleUser == null) {
         setLoading(false);
         return false;
@@ -363,6 +372,7 @@ class AuthProvider extends ChangeNotifier {
         notifyListeners();
         return true;
       }
+
       setLoading(false);
       return false;
     } catch (e) {
@@ -377,6 +387,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       setLoading(true);
       clearError();
+
       final LoginResult result = await FacebookAuth.instance.login(
         permissions: ['email', 'public_profile'],
       );
@@ -416,6 +427,7 @@ class AuthProvider extends ChangeNotifier {
       } else {
         setError('Facebook sign-in failed: ${result.message ?? 'Unknown error'}');
       }
+
       setLoading(false);
       return false;
     } catch (e) {
@@ -482,6 +494,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       setLoading(true);
       clearError();
+
       if (_user != null) {
         Map<String, dynamic> updateData = {};
         
@@ -498,6 +511,7 @@ class AuthProvider extends ChangeNotifier {
         await _firestore.collection('users').doc(_user!.uid).update(updateData);
         await reloadUserData();
       }
+
       setLoading(false);
       return true;
     } catch (e) {

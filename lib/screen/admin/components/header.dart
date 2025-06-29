@@ -4,13 +4,13 @@ import 'package:provider/provider.dart';
 import 'package:currency_converter/auth/auth_provider.dart';
 import '../../../utils/modern_constants.dart';
 
-class ResponsiveHeader extends StatelessWidget {
+class Header extends StatelessWidget {
   final String title;
   final String? subtitle;
   final VoidCallback onMenuTap;
   final bool isMobile;
 
-  const ResponsiveHeader({
+  const Header({
     super.key,
     required this.title,
     this.subtitle,

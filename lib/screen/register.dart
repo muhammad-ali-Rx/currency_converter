@@ -2,6 +2,7 @@ import 'package:currency_converter/auth/auth_provider.dart';
 import 'package:currency_converter/screen/profile_completion_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'login.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -484,7 +485,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // FIXED: Improved login link navigation
   Widget _buildLoginLink() {
     return TextButton(
       onPressed: _navigateToLogin,
@@ -506,7 +506,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  // FIXED: Proper navigation to login screen
   void _navigateToLogin() {
     if (!mounted) return;
     
@@ -514,19 +513,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     authProvider.clearError();
     
-    // Check if we can pop (if login screen is in the stack)
-    if (Navigator.canPop(context)) {
-      Navigator.pop(context);
-    } else {
-      // If we can't pop, push replacement to login screen
-      // You need to replace 'LoginScreen' with your actual login screen class
-      Navigator.pushReplacementNamed(context, '/login');
-      // Alternative: if you don't have named routes
-      // Navigator.pushReplacement(
-      //   context,
-      //   MaterialPageRoute(builder: (context) => const LoginScreen()),
-      // );
-    }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+    );
   }
 
   void _handleRegister() async {
@@ -553,13 +543,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         // Small delay for better UX
         await Future.delayed(const Duration(milliseconds: 500));
-
         if (mounted) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => const ProfileCompletionScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const ProfileCompletionScreen()),
           );
         }
       }
@@ -592,15 +579,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
             duration: Duration(seconds: 2),
           ),
         );
-
         await Future.delayed(const Duration(milliseconds: 500));
-
         if (mounted) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => const ProfileCompletionScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const ProfileCompletionScreen()),
           );
         }
       }
@@ -633,15 +616,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
             duration: Duration(seconds: 2),
           ),
         );
-
         await Future.delayed(const Duration(milliseconds: 500));
-
         if (mounted) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (context) => const ProfileCompletionScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const ProfileCompletionScreen()),
           );
         }
       }

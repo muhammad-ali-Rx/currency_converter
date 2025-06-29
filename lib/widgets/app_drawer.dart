@@ -1,5 +1,7 @@
 import 'package:currency_converter/auth/auth_provider.dart';
+import 'package:currency_converter/screen/CurrencyNewsScreen.dart';
 import 'package:currency_converter/screen/Portfolio_Screen.dart';
+import 'package:currency_converter/screen/admin/components/add_article.dart';
 import 'package:currency_converter/screen/edit_profile_screen.dart';
 import 'package:currency_converter/screen/feedback_screen.dart';
 import 'package:currency_converter/screen/help_support.dart';
@@ -7,7 +9,7 @@ import 'package:currency_converter/screen/news_screen.dart';
 import 'package:currency_converter/screen/notic_setting.dart';
 import 'package:currency_converter/screen/rate_alert.dart';
 import 'package:currency_converter/screen/notifications_inbox_screen.dart';
-import 'package:currency_converter/screen/admin/admin_dashboard.dart'; // Add this import
+import 'package:currency_converter/screen/admin/admin_dashboard.dart';
 import 'package:currency_converter/services/Enhanced_Notification.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,17 +22,14 @@ class FixedOverflowDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
-    final isSmallScreen = screenHeight < 700; // Detect small screens
+    final isSmallScreen = screenHeight < 700;
     
     return Drawer(
       backgroundColor: const Color(0xFF0F0F23),
       width: MediaQuery.of(context).size.width * 0.75,
       child: Column(
         children: [
-          // Fixed Header - No scroll
           _buildCompactHeader(context, isSmallScreen),
-          
-          // Scrollable Content
           Expanded(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
@@ -59,16 +58,29 @@ class FixedOverflowDrawer extends StatelessWidget {
                       () => _navigateToScreen(context, 'RateAlerts'),
                       Colors.orange,
                     ),
+                  ]),
+                  
+                  // News & Content Section
+                  _buildCompactSection('News & Content', [
                     _buildCompactTile(
                       context,
                       Icons.newspaper_rounded,
                       'Currency News',
-                      () => _navigateToScreen(context, 'News'),
+                      () => _navigateToScreen(context, 'CurrencyNews'),
                       Colors.purple,
                     ),
+                    // Admin-only news management options
+                    if (_isUserAdmin(Provider.of<AuthProvider>(context, listen: false))) ...[
+                      _buildCompactTile(
+                        context,
+                        Icons.add_circle_outline_rounded,
+                        'Add Article',
+                        () => _navigateToScreen(context, 'AddArticle'),
+                        Colors.indigo,
+                      ),
+                    ],
                   ]),
                   
-                  // Notifications
                   _buildNotificationTile(context),
                   
                   // Account & Settings
@@ -80,7 +92,6 @@ class FixedOverflowDrawer extends StatelessWidget {
                       () => _showProfileDialog(context),
                       Colors.blue,
                     ),
-                    // Admin Panel Button - Only for admin users
                     _buildAdminPanelButton(context),
                     _buildCompactTile(
                       context,
@@ -91,7 +102,6 @@ class FixedOverflowDrawer extends StatelessWidget {
                     ),
                   ]),
                   
-                  // Support & Feedback - Hide on very small screens
                   if (!isSmallScreen)
                     _buildCompactSection('Support', [
                       _buildCompactTile(
@@ -110,34 +120,28 @@ class FixedOverflowDrawer extends StatelessWidget {
                       ),
                     ]),
                   
-                  // Add some bottom padding for scroll
                   const SizedBox(height: 100),
                 ],
               ),
             ),
           ),
-          
-          // Fixed Footer - No scroll
           _buildCompactFooter(context, isSmallScreen),
         ],
       ),
     );
   }
 
-  // Separate method for Admin Panel Button with proper checks
   Widget _buildAdminPanelButton(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
-        // Multiple checks to ensure user is admin
         final userData = authProvider.userData;
         final isAdmin = userData != null && 
                        (userData['isAdmin'] == true || 
                         userData['role'] == 'admin' || 
                         userData['userType'] == 'admin');
         
-        // Only show button if user is admin
         if (!isAdmin) {
-          return const SizedBox.shrink(); // Return empty widget
+          return const SizedBox.shrink();
         }
         
         return Container(
@@ -170,7 +174,7 @@ class FixedOverflowDrawer extends StatelessWidget {
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 13,
-                fontWeight: FontWeight.w600, // Make it bold for admin
+                fontWeight: FontWeight.w600,
               ),
             ),
             subtitle: const Text(
@@ -222,10 +226,8 @@ class FixedOverflowDrawer extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      // Compact Profile Avatar
                       _buildProfileAvatar(authProvider, isSmallScreen ? 20 : 25),
                       const SizedBox(width: 12),
-                      // User Info beside avatar to save space
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,7 +246,6 @@ class FixedOverflowDrawer extends StatelessWidget {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                // Admin Badge in header
                                 if (_isUserAdmin(authProvider))
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -294,7 +295,6 @@ class FixedOverflowDrawer extends StatelessWidget {
     );
   }
 
-  // Helper method to check if user is admin
   bool _isUserAdmin(AuthProvider authProvider) {
     final userData = authProvider.userData;
     return userData != null && 
@@ -351,7 +351,7 @@ class FixedOverflowDrawer extends StatelessWidget {
         color: color.withOpacity(0.05),
       ),
       child: ListTile(
-        dense: true, // Makes tile more compact
+        dense: true,
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
         leading: Container(
           padding: const EdgeInsets.all(6),
@@ -471,9 +471,8 @@ class FixedOverflowDrawer extends StatelessWidget {
         ),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min, // Important: Don't take extra space
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Compact Logout Button
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
@@ -504,7 +503,6 @@ class FixedOverflowDrawer extends StatelessWidget {
           
           if (!isSmallScreen) ...[
             const SizedBox(height: 8),
-            // App Version - Hide on small screens
             const Text(
               'v2.1.0',
               style: TextStyle(color: Color(0xFF8A94A6), fontSize: 10),
@@ -576,7 +574,6 @@ class FixedOverflowDrawer extends StatelessWidget {
     );
   }
 
-  // Navigation Helper - Updated with AdminPanel case
   void _navigateToScreen(BuildContext context, String screenName) {
     Navigator.pop(context);
     
@@ -590,8 +587,18 @@ class FixedOverflowDrawer extends StatelessWidget {
         case 'RateAlerts':
           screen = const RateAlertsScreen();
           break;
-        case 'News':
+        case 'CurrencyNews':
           screen = const CurrencyNewsScreen();
+          break;
+        case 'AddArticle':
+          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+          if (_isUserAdminStatic(authProvider)) {
+            screen = const AddArticleScreen();
+          } else {
+            // For normal users, do not show or navigate to AddArticle at all
+            _showMessage(context, 'Access Denied: Admin privileges required');
+            return;
+          }
           break;
         case 'Notifications':
           screen = const NotificationsInboxScreen();
@@ -606,7 +613,6 @@ class FixedOverflowDrawer extends StatelessWidget {
           screen = const UserFeedbackScreen();
           break;
         case 'AdminPanel':
-          // Check admin permission before navigation
           final authProvider = Provider.of<AuthProvider>(context, listen: false);
           if (_isUserAdminStatic(authProvider)) {
             screen = const AdminDashboard();
@@ -632,7 +638,6 @@ class FixedOverflowDrawer extends StatelessWidget {
     }
   }
 
-  // Static helper method for admin check
   bool _isUserAdminStatic(AuthProvider authProvider) {
     final userData = authProvider.userData;
     return userData != null && 

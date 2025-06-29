@@ -1,6 +1,6 @@
+import 'package:currency_converter/screen/admin/components/admin_drawer.dart';
 import 'package:currency_converter/screen/admin/components/dashboard_content.dart';
-import 'package:currency_converter/screen/admin/components/modern_header.dart';
-import 'package:currency_converter/screen/admin/components/modern_sidebar.dart';
+import 'package:currency_converter/screen/admin/components/header.dart';
 import 'package:currency_converter/screen/admin/components/users_management.dart';
 import 'package:currency_converter/screen/admin/components/rate_alerts_content.dart';
 import 'package:currency_converter/screen/admin/components/currency_news_content.dart';
@@ -67,7 +67,7 @@ class _ResponsiveAdminDashboardState extends State<AdminDashboard> {
   Widget _buildMobileLayout() {
     return Column(
       children: [
-        ResponsiveHeader(
+        Header(
           title: _pageTitles[_selectedIndex],
           subtitle: _pageDescriptions[_selectedIndex],
           onMenuTap: () {
@@ -83,7 +83,7 @@ class _ResponsiveAdminDashboardState extends State<AdminDashboard> {
   Widget _buildDesktopLayout() {
     return Row(
       children: [
-        ResponsiveSidebar(
+        AdminDrawer(
           selectedIndex: _selectedIndex,
           onItemSelected: (index) {
             setState(() {
@@ -94,7 +94,7 @@ class _ResponsiveAdminDashboardState extends State<AdminDashboard> {
         Expanded(
           child: Column(
             children: [
-              ResponsiveHeader(
+              Header(
                 title: _pageTitles[_selectedIndex],
                 subtitle: _pageDescriptions[_selectedIndex],
                 onMenuTap: () {},
@@ -111,7 +111,7 @@ class _ResponsiveAdminDashboardState extends State<AdminDashboard> {
   Widget _buildMobileDrawer() {
     return Drawer(
       backgroundColor: ModernConstants.sidebarBackground,
-      child: ResponsiveSidebar(
+      child: AdminDrawer(
         selectedIndex: _selectedIndex,
         onItemSelected: (index) {
           setState(() {

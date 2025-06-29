@@ -1,5 +1,7 @@
 import 'package:currency_converter/auth/auth_provider.dart';
 import 'package:currency_converter/screen/login.dart';
+import 'package:currency_converter/screen/register.dart';
+import 'package:currency_converter/screen/profile_completion_screen.dart';
 import 'package:currency_converter/screen/admin/admin_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -27,7 +29,7 @@ void main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-
+  
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -60,6 +62,7 @@ class CurrencyConverterApp extends StatelessWidget {
           scaffoldBackgroundColor: const Color(0xFF0A0A1A),
         ),
         home: const AppInitializer(),
+        // Remove all route-related properties to fix the error
       ),
     );
   }
@@ -126,14 +129,18 @@ class _AppInitializerState extends State<AppInitializer> {
 
         // Navigate based on auth state and role
         if (authProvider.isAuthenticated) {
+          print('User is authenticated: ${authProvider.user?.uid}');
           // Check if user is admin
           if (authProvider.isAdmin) {
+            print('User is admin, showing admin dashboard');
             return const AdminDashboard();
           } else {
+            print('User is regular user, showing main screen');
             // Regular user - show main currency converter app
             return const Mainscreen();
           }
         } else {
+          print('User is not authenticated, showing login screen');
           // User is not logged in - show login screen
           return const LoginScreen();
         }
