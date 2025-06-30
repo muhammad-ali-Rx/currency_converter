@@ -25,6 +25,53 @@ class _SimpleCreateAlertScreenState extends State<SimpleCreateAlertScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _checkNotificationPermissions();
+  }
+
+  Future<void> _checkNotificationPermissions() async {
+    final hasPermissions = await _alertService.hasNotificationPermissions();
+    if (!hasPermissions && mounted) {
+      _showPermissionDialog();
+    }
+  }
+
+  void _showPermissionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Row(
+          children: [
+            Icon(Icons.notifications, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Enable Notifications', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: const Text(
+          'To receive rate alerts, please enable notifications for this app.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Later', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _alertService.openNotificationSettings();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('Enable', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
   void dispose() {
     _targetRateController.dispose();
     super.dispose();
@@ -38,6 +85,14 @@ class _SimpleCreateAlertScreenState extends State<SimpleCreateAlertScreen> {
         backgroundColor: const Color(0xFF0F0F23),
         title: const Text('Create Alert', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          // Test notification button
+          IconButton(
+            onPressed: _testNotification,
+            icon: const Icon(Icons.notifications_active, color: Colors.orange),
+            tooltip: 'Test Notification',
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -45,6 +100,10 @@ class _SimpleCreateAlertScreenState extends State<SimpleCreateAlertScreen> {
           key: _formKey,
           child: Column(
             children: [
+              // Notification Status Card
+              _buildNotificationStatusCard(),
+              const SizedBox(height: 20),
+              
               // Currency Selection
               Container(
                 padding: const EdgeInsets.all(20),
@@ -224,6 +283,83 @@ class _SimpleCreateAlertScreenState extends State<SimpleCreateAlertScreen> {
     );
   }
 
+  Widget _buildNotificationStatusCard() {
+    return FutureBuilder<bool>(
+      future: _alertService.hasNotificationPermissions(),
+      builder: (context, snapshot) {
+        final hasPermissions = snapshot.data ?? false;
+        
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: hasPermissions ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: hasPermissions ? Colors.green.withOpacity(0.3) : Colors.orange.withOpacity(0.3),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                hasPermissions ? Icons.notifications_active : Icons.notifications_off,
+                color: hasPermissions ? Colors.green : Colors.orange,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      hasPermissions ? 'Notifications Enabled' : 'Notifications Disabled',
+                      style: TextStyle(
+                        color: hasPermissions ? Colors.green : Colors.orange,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      hasPermissions 
+                          ? 'You will receive alerts when rates are triggered'
+                          : 'Enable notifications to receive rate alerts',
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              if (!hasPermissions)
+                TextButton(
+                  onPressed: () => _alertService.openNotificationSettings(),
+                  child: const Text('Enable', style: TextStyle(color: Colors.orange)),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _testNotification() async {
+    try {
+      await _alertService.testNotification();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Test notification sent!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _createAlert() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -244,7 +380,7 @@ class _SimpleCreateAlertScreenState extends State<SimpleCreateAlertScreen> {
       if (alertId != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Alert created successfully!'),
+            content: Text('✅ Alert created successfully!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -256,7 +392,7 @@ class _SimpleCreateAlertScreenState extends State<SimpleCreateAlertScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text('❌ Error: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );

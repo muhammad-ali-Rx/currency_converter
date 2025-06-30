@@ -1,7 +1,5 @@
 import 'package:currency_converter/auth/auth_provider.dart';
 import 'package:currency_converter/screen/login.dart';
-import 'package:currency_converter/screen/register.dart';
-import 'package:currency_converter/screen/profile_completion_screen.dart';
 import 'package:currency_converter/screen/admin/admin_dashboard.dart';
 import 'package:currency_converter/services/alert-service.dart';
 import 'package:currency_converter/services/simple-background-service.dart';
@@ -16,14 +14,16 @@ import 'screen/mainscreen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  print('🚀 Starting app initialization...');
+  
   // Firebase initialization
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('Firebase initialized successfully');
+    print('✅ Firebase initialized successfully');
   } catch (e) {
-    print('Firebase initialization error: $e');
+    print('❌ Firebase initialization error: $e');
   }
 
   // System UI settings
@@ -39,18 +39,48 @@ void main() async {
     ),
   );
 
-  // Initialize Simple Alert Services
+  // Initialize Alert Services with proper error handling
   try {
+    print('🔄 Initializing alert services...');
+    
     final alertService = SimpleAlertService();
-    await alertService.initNotifications();
     
-    // Initialize and start background service
-    SimpleBackgroundService.initialize();
-    SimpleBackgroundService.startChecking();
+    // Initialize notifications with timeout
+    final notificationsInitialized = await Future.any([
+      alertService.initNotifications(),
+      Future.delayed(const Duration(seconds: 10), () => false), // 10 second timeout
+    ]);
     
-    print('Simple alert services initialized successfully');
+    if (notificationsInitialized) {
+      print('✅ Notifications initialized successfully');
+      
+      // Test notification after a delay
+      Future.delayed(const Duration(seconds: 2), () async {
+        try {
+          final testResult = await alertService.testNotification();
+          print('🧪 Test notification result: $testResult');
+        } catch (e) {
+          print('⚠️ Test notification failed: $e');
+        }
+      });
+      
+    } else {
+      print('⚠️ Notifications initialization failed or timed out');
+    }
+    
+    // Initialize background service
+    try {
+      SimpleBackgroundService.initialize();
+      SimpleBackgroundService.startChecking();
+      print('✅ Background service initialized');
+    } catch (e) {
+      print('⚠️ Background service initialization failed: $e');
+    }
+    
+    print('✅ Alert services setup completed');
   } catch (e) {
-    print('Alert service initialization error: $e');
+    print('❌ Alert service initialization error: $e');
+    // Continue anyway - app should work without notifications
   }
 
   runApp(const CurrencyConverterApp());
@@ -112,7 +142,11 @@ class _AppInitializerState extends State<AppInitializer> {
   @override
   void dispose() {
     // Clean up background service when app is disposed
-    SimpleBackgroundService.stopChecking();
+    try {
+      SimpleBackgroundService.stopChecking();
+    } catch (e) {
+      print('Error stopping background service: $e');
+    }
     super.dispose();
   }
 
@@ -151,18 +185,18 @@ class _AppInitializerState extends State<AppInitializer> {
 
         // Navigate based on auth state and role
         if (authProvider.isAuthenticated) {
-          print('User is authenticated: ${authProvider.user?.uid}');
+          print('✅ User is authenticated: ${authProvider.user?.uid}');
           // Check if user is admin
           if (authProvider.isAdmin) {
-            print('User is admin, showing admin dashboard');
+            print('👑 User is admin, showing admin dashboard');
             return const AdminDashboard();
           } else {
-            print('User is regular user, showing main screen');
+            print('👤 User is regular user, showing main screen');
             // Regular user - show main currency converter app
             return const Mainscreen();
           }
         } else {
-          print('User is not authenticated, showing login screen');
+          print('🔐 User is not authenticated, showing login screen');
           // User is not logged in - show login screen
           return const LoginScreen();
         }

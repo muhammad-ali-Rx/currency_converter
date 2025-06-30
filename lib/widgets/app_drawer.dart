@@ -3,15 +3,13 @@ import 'package:currency_converter/screen/CurrencyNewsScreen.dart';
 import 'package:currency_converter/screen/Portfolio_Screen.dart';
 import 'package:currency_converter/screen/addarticlescreen.dart';
 import 'package:currency_converter/screen/admin/components/admin_add_article.dart';
+import 'package:currency_converter/screen/debug-notification-screen.dart';
 import 'package:currency_converter/screen/edit_profile_screen.dart';
 import 'package:currency_converter/screen/feedback_screen.dart';
 import 'package:currency_converter/screen/help_support.dart';
 import 'package:currency_converter/screen/news_screen.dart';
-import 'package:currency_converter/screen/notic_setting.dart';
 import 'package:currency_converter/screen/rate-alerts-list-screen.dart';
-import 'package:currency_converter/screen/notifications_inbox_screen.dart';
 import 'package:currency_converter/screen/admin/admin_dashboard.dart';
-import 'package:currency_converter/services/Enhanced_Notification.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -82,7 +80,7 @@ class FixedOverflowDrawer extends StatelessWidget {
                     ],
                   ]),
                   
-                  _buildNotificationTile(context),
+                 
                   
                   // Account & Settings
                   _buildCompactSection('Account', [
@@ -100,6 +98,17 @@ class FixedOverflowDrawer extends StatelessWidget {
                       'Settings',
                       () => _navigateToScreen(context, 'Settings'),
                       Colors.grey,
+                    ),
+                  ]),
+                  
+                  // Debug Section (Always visible for testing)
+                  _buildCompactSection('Debug & Testing', [
+                    _buildCompactTile(
+                      context,
+                      Icons.bug_report_rounded,
+                      'Debug Notifications',
+                      () => _navigateToScreen(context, 'DebugNotifications'),
+                      Colors.red,
                     ),
                   ]),
                   
@@ -383,83 +392,7 @@ class FixedOverflowDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildNotificationTile(BuildContext context) {
-    return StreamBuilder<List<dynamic>>(
-      stream: EnhancedNotificationService().notificationStream,
-      builder: (context, snapshot) {
-        final notifications = snapshot.data ?? [];
-        final unreadCount = notifications.where((n) => !n.isRead).length;
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            color: Colors.blue.withOpacity(0.05),
-          ),
-          child: ListTile(
-            dense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-            leading: Stack(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Icon(Icons.notifications_rounded, color: Colors.blue, size: 18),
-                ),
-                if (unreadCount > 0)
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        unreadCount > 9 ? '9+' : unreadCount.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 7,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            title: const Text(
-              'Notifications',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            subtitle: Text(
-              unreadCount > 0 ? '$unreadCount new' : 'All caught up!',
-              style: const TextStyle(
-                color: Color(0xFF8A94A6),
-                fontSize: 10,
-              ),
-            ),
-            trailing: Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.blue.withOpacity(0.5),
-              size: 12,
-            ),
-            onTap: () {
-              HapticFeedback.lightImpact();
-              _navigateToScreen(context, 'Notifications');
-            },
-          ),
-        );
-      },
-    );
-  }
-
+ 
   Widget _buildCompactFooter(BuildContext context, bool isSmallScreen) {
     return Container(
       padding: EdgeInsets.all(isSmallScreen ? 8 : 12),
@@ -586,7 +519,7 @@ class FixedOverflowDrawer extends StatelessWidget {
           screen = const PortfolioScreen();
           break;
         case 'RateAlerts':
-          screen = const SimpleAlertsListScreen(); // Updated to use simple alerts
+          screen = const SimpleAlertsListScreen();
           break;
         case 'CurrencyNews':
           screen = const CurrencyNewsScreen();
@@ -599,9 +532,6 @@ class FixedOverflowDrawer extends StatelessWidget {
             _showMessage(context, 'Access Denied: Admin privileges required');
             return;
           }
-          break;
-        case 'Notifications':
-          screen = const NotificationsInboxScreen();
           break;
         case 'Settings':
           screen = const EditProfileScreen();
@@ -620,6 +550,9 @@ class FixedOverflowDrawer extends StatelessWidget {
             _showMessage(context, 'Access Denied: Admin privileges required');
             return;
           }
+          break;
+        case 'DebugNotifications': // Add this case
+          screen = const DebugNotificationScreen();
           break;
         default:
           _showMessage(context, 'Screen not found: $screenName');
