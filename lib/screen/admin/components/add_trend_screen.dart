@@ -1,6 +1,8 @@
 import 'package:currency_converter/model/trend_model.dart';
 import 'package:currency_converter/services/firebase_service.dart';
 import 'package:flutter/material.dart';
+import '../../../utils/modern_constants.dart' as modern_constants;
+import '../../../utils/responsive_helper.dart';
 
 class AddTrendScreen extends StatefulWidget {
   final Trend? trend;
@@ -66,32 +68,49 @@ class _AddTrendScreenState extends State<AddTrendScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = ResponsiveHelper.isMobile(context);
+    
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A1A),
-      body: SafeArea(
+      backgroundColor: modern_constants.ModernConstants.backgroundColor,
+      appBar: AppBar(
+        backgroundColor: modern_constants.ModernConstants.backgroundColor,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_rounded,
+            color: modern_constants.ModernConstants.textPrimary,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          widget.trend == null ? 'Add Market Trend' : 'Edit Market Trend',
+          style: TextStyle(
+            color: modern_constants.ModernConstants.textPrimary,
+            fontSize: ResponsiveHelper.getTitleFontSize(context),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: ResponsiveHelper.getScreenPadding(context),
         child: Column(
           children: [
-            _buildAppBar(),
             Expanded(
               child: Container(
-                margin: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0F0F23),
+                  gradient: modern_constants.ModernConstants.cardGradient,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFF1A1A2E)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
+                  boxShadow: modern_constants.ModernConstants.cardShadow,
+                  border: Border.all(
+                    color: modern_constants.ModernConstants.textTertiary.withOpacity(0.2),
+                  ),
                 ),
                 child: Column(
                   children: [
                     Expanded(
                       child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(24),
+                        padding: EdgeInsets.all(isMobile ? 20 : 24),
                         child: _buildTrendForm(),
                       ),
                     ),
@@ -102,32 +121,6 @@ class _AddTrendScreenState extends State<AddTrendScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          ),
-          Expanded(
-            child: Text(
-              widget.trend == null ? 'Add Market Trend' : 'Edit Market Trend',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(width: 48),
-        ],
       ),
     );
   }
@@ -285,13 +278,13 @@ class _AddTrendScreenState extends State<AddTrendScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.orange.withOpacity(0.1),
-            Colors.deepOrange.withOpacity(0.1),
+            modern_constants.ModernConstants.primaryPurple.withOpacity(0.1),
+            modern_constants.ModernConstants.primaryPurple.withOpacity(0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.orange.withOpacity(0.2),
+          color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.2),
         ),
       ),
       child: Row(
@@ -299,13 +292,20 @@ class _AddTrendScreenState extends State<AddTrendScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.2),
+              gradient: modern_constants.ModernConstants.primaryGradient,
               borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Icon(
               widget.trend == null ? Icons.add_chart : Icons.edit_note_rounded,
-              color: Colors.orange,
-              size: 32,
+              color: Colors.white,
+              size: 24,
             ),
           ),
           const SizedBox(width: 16),
@@ -315,9 +315,9 @@ class _AddTrendScreenState extends State<AddTrendScreen> {
               children: [
                 Text(
                   widget.trend == null ? 'Create Market Trend' : 'Edit Market Trend',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
+                  style: TextStyle(
+                    color: modern_constants.ModernConstants.textPrimary,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -326,8 +326,8 @@ class _AddTrendScreenState extends State<AddTrendScreen> {
                   widget.trend == null 
                     ? 'Add new market trend analysis and insights'
                     : 'Update trend information and analysis',
-                  style: const TextStyle(
-                    color: Color(0xFF8A94A6),
+                  style: TextStyle(
+                    color: modern_constants.ModernConstants.textSecondary,
                     fontSize: 14,
                   ),
                 ),
@@ -353,14 +353,18 @@ class _AddTrendScreenState extends State<AddTrendScreen> {
       children: [
         Row(
           children: [
-            Icon(icon, color: Colors.orange, size: 20),
+            Icon(
+              icon, 
+              color: modern_constants.ModernConstants.primaryPurple, 
+              size: 20
+            ),
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF8A94A6),
-                fontWeight: FontWeight.w500,
+                color: modern_constants.ModernConstants.textSecondary,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -371,24 +375,26 @@ class _AddTrendScreenState extends State<AddTrendScreen> {
           maxLines: maxLines,
           keyboardType: keyboardType,
           validator: validator,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: Colors.white,
+            color: modern_constants.ModernConstants.textPrimary,
           ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: Color(0xFF8A94A6)),
+            hintStyle: TextStyle(color: modern_constants.ModernConstants.textTertiary),
             filled: true,
-            fillColor: const Color(0xFF1A1A2E),
+            fillColor: modern_constants.ModernConstants.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(
+                color: modern_constants.ModernConstants.textTertiary.withOpacity(0.3),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Colors.orange,
+              borderSide: BorderSide(
+                color: modern_constants.ModernConstants.primaryPurple,
                 width: 2,
               ),
             ),
@@ -420,14 +426,18 @@ class _AddTrendScreenState extends State<AddTrendScreen> {
       children: [
         Row(
           children: [
-            Icon(icon, color: Colors.orange, size: 20),
+            Icon(
+              icon, 
+              color: modern_constants.ModernConstants.primaryPurple, 
+              size: 20
+            ),
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF8A94A6),
-                fontWeight: FontWeight.w500,
+                color: modern_constants.ModernConstants.textSecondary,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -436,34 +446,36 @@ class _AddTrendScreenState extends State<AddTrendScreen> {
         DropdownButtonFormField<String>(
           value: value,
           onChanged: onChanged,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: Colors.white,
+            color: modern_constants.ModernConstants.textPrimary,
           ),
           decoration: InputDecoration(
             filled: true,
-            fillColor: const Color(0xFF1A1A2E),
+            fillColor: modern_constants.ModernConstants.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(
+                color: modern_constants.ModernConstants.textTertiary.withOpacity(0.3),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Colors.orange,
+              borderSide: BorderSide(
+                color: modern_constants.ModernConstants.primaryPurple,
                 width: 2,
               ),
             ),
             contentPadding: const EdgeInsets.all(16),
           ),
-          dropdownColor: const Color(0xFF1A1A2E),
+          dropdownColor: modern_constants.ModernConstants.cardBackground,
           items: items.map((String item) {
             return DropdownMenuItem<String>(
               value: item,
               child: Text(
                 item,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: modern_constants.ModernConstants.textPrimary),
               ),
             );
           }).toList(),
@@ -476,25 +488,29 @@ class _AddTrendScreenState extends State<AddTrendScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A2E),
+        color: modern_constants.ModernConstants.cardBackground,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.orange.withOpacity(0.3),
+          color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.3),
         ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.visibility_rounded, color: Colors.orange, size: 20),
-              SizedBox(width: 8),
+              Icon(
+                Icons.visibility_rounded, 
+                color: modern_constants.ModernConstants.primaryPurple, 
+                size: 20
+              ),
+              const SizedBox(width: 8),
               Text(
                 'Active Trend',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: modern_constants.ModernConstants.textPrimary,
                 ),
               ),
             ],
@@ -506,10 +522,10 @@ class _AddTrendScreenState extends State<AddTrendScreen> {
                 _isActive = value;
               });
             },
-            activeColor: Colors.orange,
-            activeTrackColor: Colors.orange.withOpacity(0.3),
-            inactiveThumbColor: const Color(0xFF8A94A6),
-            inactiveTrackColor: const Color(0xFF8A94A6).withOpacity(0.3),
+            activeColor: modern_constants.ModernConstants.primaryPurple,
+            activeTrackColor: modern_constants.ModernConstants.primaryPurple.withOpacity(0.3),
+            inactiveThumbColor: modern_constants.ModernConstants.textTertiary,
+            inactiveTrackColor: modern_constants.ModernConstants.textTertiary.withOpacity(0.3),
           ),
         ],
       ),
@@ -520,40 +536,54 @@ class _AddTrendScreenState extends State<AddTrendScreen> {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.all(24),
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _saveTrend,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orange,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+      decoration: BoxDecoration(
+        gradient: modern_constants.ModernConstants.primaryGradient,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.3),
+            blurRadius: 15,
+            spreadRadius: 1,
+            offset: const Offset(0, 4),
           ),
-          elevation: 2,
-        ),
-        child: _isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(widget.trend == null ? Icons.add : Icons.update),
-                  const SizedBox(width: 8),
-                  Text(
-                    widget.trend == null ? 'Add Trend' : 'Update Trend',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _isLoading ? null : _saveTrend,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
                     ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        widget.trend == null ? Icons.add : Icons.update,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        widget.trend == null ? 'Add Trend' : 'Update Trend',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+          ),
+        ),
       ),
     );
   }
@@ -609,7 +639,7 @@ class _AddTrendScreenState extends State<AddTrendScreen> {
                 ),
               ],
             ),
-            backgroundColor: Colors.orange,
+            backgroundColor: modern_constants.ModernConstants.primaryPurple,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),

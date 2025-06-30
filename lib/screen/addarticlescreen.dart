@@ -7,16 +7,16 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../services/firebase_service.dart';
 
-class AddArticleScreen extends StatefulWidget {
+class userArticleScreen extends StatefulWidget {
   final Article? article;
 
-  const AddArticleScreen({super.key, this.article});
+  const userArticleScreen({super.key, this.article});
 
   @override
-  State<AddArticleScreen> createState() => _AddArticleScreenState();
+  State<userArticleScreen> createState() => _userArticleScreenState();
 }
 
-class _AddArticleScreenState extends State<AddArticleScreen> {
+class _userArticleScreenState extends State<userArticleScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _summaryController = TextEditingController();
@@ -72,7 +72,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A1A),
+      backgroundColor: const Color(0xFF0F0F23),
       body: SafeArea(
         child: Column(
           children: [
@@ -81,9 +81,9 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
               child: Container(
                 margin: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0F0F23),
+                  color: const Color(0xFF1A1A2E),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFF1A1A2E)),
+                  border: Border.all(color: const Color.fromARGB(255, 10, 108, 236).withOpacity(0.3)),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.3),
@@ -144,11 +144,9 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         children: [
           _buildHeaderSection(),
           const SizedBox(height: 32),
-
           // Image Picker Section
           _buildImagePicker(),
           const SizedBox(height: 24),
-
           // Title
           _buildTextFormField(
             controller: _titleController,
@@ -167,7 +165,6 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
             },
           ),
           const SizedBox(height: 24),
-
           // Category and Impact Row
           Row(
             children: [
@@ -193,7 +190,6 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
             ],
           ),
           const SizedBox(height: 24),
-
           // Source and Author Row
           Row(
             children: [
@@ -229,7 +225,6 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
             ],
           ),
           const SizedBox(height: 24),
-
           // Summary
           _buildTextFormField(
             controller: _summaryController,
@@ -248,7 +243,6 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
             },
           ),
           const SizedBox(height: 24),
-
           // Content
           _buildTextFormField(
             controller: _contentController,
@@ -267,7 +261,6 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
             },
           ),
           const SizedBox(height: 24),
-
           // Published Switch
           _buildPublishSwitch(),
         ],
@@ -281,7 +274,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
       children: [
         Row(
           children: [
-            const Icon(Icons.image_rounded, color: Color(0xFF4ECDC4), size: 20),
+            const Icon(Icons.image_rounded, color: Color.fromARGB(255, 10, 108, 236), size: 20),
             const SizedBox(width: 8),
             const Text(
               'Article Image',
@@ -300,10 +293,10 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
             width: double.infinity,
             height: 200,
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A2E),
+              color: const Color(0xFF0F0F23),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: const Color(0xFF4ECDC4).withOpacity(0.3),
+                color: const Color.fromARGB(255, 10, 108, 236).withOpacity(0.3),
                 style: BorderStyle.solid,
               ),
             ),
@@ -383,7 +376,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         Icon(
           Icons.add_photo_alternate_outlined,
           size: 48,
-          color: const Color(0xFF4ECDC4).withOpacity(0.6),
+          color: const Color.fromARGB(255, 10, 108, 236).withOpacity(0.6),
         ),
         const SizedBox(height: 8),
         Text(
@@ -488,13 +481,13 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF4ECDC4).withOpacity(0.1),
-            const Color(0xFF44A08D).withOpacity(0.1),
+            const Color.fromARGB(255, 10, 108, 236).withOpacity(0.1),
+            const Color.fromARGB(255, 10, 108, 236).withOpacity(0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFF4ECDC4).withOpacity(0.2),
+          color: const Color.fromARGB(255, 10, 108, 236).withOpacity(0.2),
         ),
       ),
       child: Row(
@@ -502,12 +495,12 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF4ECDC4).withOpacity(0.2),
+              color: const Color.fromARGB(255, 10, 108, 236).withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               widget.article == null ? Icons.add_circle_outline : Icons.edit_note_rounded,
-              color: const Color(0xFF4ECDC4),
+              color: const Color.fromARGB(255, 10, 108, 236),
               size: 32,
             ),
           ),
@@ -555,7 +548,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
       children: [
         Row(
           children: [
-            Icon(icon, color: const Color(0xFF4ECDC4), size: 20),
+            Icon(icon, color: const Color.fromARGB(255, 10, 108, 236), size: 20),
             const SizedBox(width: 8),
             Text(
               label,
@@ -581,7 +574,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
             hintText: hint,
             hintStyle: const TextStyle(color: Color(0xFF8A94A6)),
             filled: true,
-            fillColor: const Color(0xFF1A1A2E),
+            fillColor: const Color(0xFF0F0F23),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -589,7 +582,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(
-                color: Color(0xFF4ECDC4),
+                color: Color.fromARGB(255, 10, 108, 236),
                 width: 2,
               ),
             ),
@@ -621,7 +614,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
       children: [
         Row(
           children: [
-            Icon(icon, color: const Color(0xFF4ECDC4), size: 20),
+            Icon(icon, color: const Color.fromARGB(255, 10, 108, 236), size: 20),
             const SizedBox(width: 8),
             Text(
               label,
@@ -644,7 +637,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
           ),
           decoration: InputDecoration(
             filled: true,
-            fillColor: const Color(0xFF1A1A2E),
+            fillColor: const Color(0xFF0F0F23),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -652,7 +645,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(
-                color: Color(0xFF4ECDC4),
+                color: Color.fromARGB(255, 10, 108, 236),
                 width: 2,
               ),
             ),
@@ -677,10 +670,10 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A2E),
+        color: const Color(0xFF0F0F23),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFF4ECDC4).withOpacity(0.3),
+          color: const Color.fromARGB(255, 10, 108, 236).withOpacity(0.3),
         ),
       ),
       child: Row(
@@ -688,7 +681,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
         children: [
           const Row(
             children: [
-              Icon(Icons.publish_rounded, color: Color(0xFF4ECDC4), size: 20),
+              Icon(Icons.publish_rounded, color: Color.fromARGB(255, 10, 108, 236), size: 20),
               SizedBox(width: 8),
               Text(
                 'Publish Article',
@@ -707,8 +700,8 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                 _isPublished = value;
               });
             },
-            activeColor: const Color(0xFF4ECDC4),
-            activeTrackColor: const Color(0xFF4ECDC4).withOpacity(0.3),
+            activeColor: const Color.fromARGB(255, 10, 108, 236),
+            activeTrackColor: const Color.fromARGB(255, 10, 108, 236).withOpacity(0.3),
             inactiveThumbColor: const Color(0xFF8A94A6),
             inactiveTrackColor: const Color(0xFF8A94A6).withOpacity(0.3),
           ),
@@ -724,7 +717,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
       child: ElevatedButton(
         onPressed: _isLoading ? null : _saveArticle,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF4ECDC4),
+          backgroundColor: const Color.fromARGB(255, 10, 108, 236),
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
@@ -813,7 +806,7 @@ class _AddArticleScreenState extends State<AddArticleScreen> {
                 ),
               ],
             ),
-            backgroundColor: const Color(0xFF4ECDC4),
+            backgroundColor: const Color.fromARGB(255, 10, 108, 236),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),

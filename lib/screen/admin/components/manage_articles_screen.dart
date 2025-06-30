@@ -1,4 +1,4 @@
-import 'package:currency_converter/screen/admin/components/add_article.dart';
+import 'package:currency_converter/screen/admin/components/admin_add_article.dart';
 import 'package:flutter/material.dart';
 import 'package:currency_converter/model/article_model.dart';
 import 'package:currency_converter/services/firebase_service.dart';
@@ -43,7 +43,7 @@ class _ManageArticlesScreenState extends State<ManageArticlesScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const AddArticleScreen(),
+                  builder: (context) => const AdminArticleScreen(),
                 ),
               ).then((_) => setState(() {}));
             },
@@ -218,7 +218,7 @@ class _ManageArticlesScreenState extends State<ManageArticlesScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const AddArticleScreen(),
+                          builder: (context) => const AdminArticleScreen(),
                         ),
                       ).then((_) => setState(() {}));
                     },
@@ -508,7 +508,7 @@ class _ManageArticlesScreenState extends State<ManageArticlesScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddArticleScreen(article: article),
+        builder: (context) => AdminArticleScreen(article: article),
       ),
     ).then((_) => setState(() {}));
   }

@@ -1,6 +1,8 @@
 import 'package:currency_converter/model/chart_model.dart';
 import 'package:currency_converter/services/firebase_service.dart';
 import 'package:flutter/material.dart';
+import '../../../utils/modern_constants.dart' as modern_constants;
+import '../../../utils/responsive_helper.dart';
 
 class AddChartScreen extends StatefulWidget {
   final ChartData? chart;
@@ -33,22 +35,15 @@ class _AddChartScreenState extends State<AddChartScreen> {
 
   final List<String> _currencies = [
     'USD/EUR', 'USD/GBP', 'USD/JPY', 'EUR/GBP', 
-    'GBP/JPY', 'AUD/USD', 'USD/CAD', 'NZD/USD'
-    // add more currency pairs as needed
-    'USD/CHF', 'AUD/JPY', 'CAD/JPY', 'GBP/AUD'
-    // more
-    'EUR/JPY', 'EUR/AUD', 'GBP/CAD', 'AUD/CAD'
-    // and so on...
-    'EUR/CHF', 'GBP/CHF', 'AUD/NZD', 'NZD/CAD'
-    // you can expand this list with more pairs as needed 
-    'USD/SGD', 'USD/HKD', 'USD/CNY', 'USD/INR'
-    // and more pairs as needed 
-    'USD/SEK', 'USD/NOK', 'USD/DKK', 'USD/ZAR'
-    'USD/PKR', 'USD/TRY', 'USD/MXN', 'USD/BRL'
-    'INR/PKR', 'INR/JPY', 'INR/EUR', 'INR/USD'
-    'PKR/JPY', 'PKR/EUR', 'PKR/USD', 'PKR/GBP'
-    
-
+    'GBP/JPY', 'AUD/USD', 'USD/CAD', 'NZD/USD',
+    'USD/CHF', 'AUD/JPY', 'CAD/JPY', 'GBP/AUD',
+    'EUR/JPY', 'EUR/AUD', 'GBP/CAD', 'AUD/CAD',
+    'EUR/CHF', 'GBP/CHF', 'AUD/NZD', 'NZD/CAD',
+    'USD/SGD', 'USD/HKD', 'USD/CNY', 'USD/INR',
+    'USD/SEK', 'USD/NOK', 'USD/DKK', 'USD/ZAR',
+    'USD/PKR', 'USD/TRY', 'USD/MXN', 'USD/BRL',
+    'INR/PKR', 'INR/JPY', 'INR/EUR', 'INR/USD',
+    'PKR/JPY', 'PKR/EUR', 'PKR/USD', 'PKR/GBP',
   ];
   
   final List<String> _chartTypes = ['Line', 'Candlestick', 'Bar', 'Area'];
@@ -111,32 +106,49 @@ class _AddChartScreenState extends State<AddChartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = ResponsiveHelper.isMobile(context);
+    
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A1A),
-      body: SafeArea(
+      backgroundColor: modern_constants.ModernConstants.backgroundColor,
+      appBar: AppBar(
+        backgroundColor: modern_constants.ModernConstants.backgroundColor,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_rounded,
+            color: modern_constants.ModernConstants.textPrimary,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          widget.chart == null ? 'Add Market Chart' : 'Edit Market Chart',
+          style: TextStyle(
+            color: modern_constants.ModernConstants.textPrimary,
+            fontSize: ResponsiveHelper.getTitleFontSize(context),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: ResponsiveHelper.getScreenPadding(context),
         child: Column(
           children: [
-            _buildAppBar(),
             Expanded(
               child: Container(
-                margin: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0F0F23),
+                  gradient: modern_constants.ModernConstants.cardGradient,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFF1A1A2E)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
+                  boxShadow: modern_constants.ModernConstants.cardShadow,
+                  border: Border.all(
+                    color: modern_constants.ModernConstants.textTertiary.withOpacity(0.2),
+                  ),
                 ),
                 child: Column(
                   children: [
                     Expanded(
                       child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(24),
+                        padding: EdgeInsets.all(isMobile ? 20 : 24),
                         child: _buildChartForm(),
                       ),
                     ),
@@ -147,32 +159,6 @@ class _AddChartScreenState extends State<AddChartScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          ),
-          Expanded(
-            child: Text(
-              widget.chart == null ? 'Add Market Chart' : 'Edit Market Chart',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(width: 48),
-        ],
       ),
     );
   }
@@ -304,14 +290,18 @@ class _AddChartScreenState extends State<AddChartScreen> {
       children: [
         Row(
           children: [
-            const Icon(Icons.analytics_rounded, color: Colors.blue, size: 20),
+            Icon(
+              Icons.analytics_rounded, 
+              color: modern_constants.ModernConstants.primaryPurple, 
+              size: 20
+            ),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               'Technical Indicators',
               style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF8A94A6),
-                fontWeight: FontWeight.w500,
+                color: modern_constants.ModernConstants.textSecondary,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -324,24 +314,26 @@ class _AddChartScreenState extends State<AddChartScreen> {
             Expanded(
               child: TextFormField(
                 controller: _indicatorController,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: modern_constants.ModernConstants.textPrimary,
                 ),
                 decoration: InputDecoration(
                   hintText: 'Add indicator (e.g., RSI, MACD, SMA)...',
-                  hintStyle: const TextStyle(color: Color(0xFF8A94A6)),
+                  hintStyle: TextStyle(color: modern_constants.ModernConstants.textTertiary),
                   filled: true,
-                  fillColor: const Color(0xFF1A1A2E),
+                  fillColor: modern_constants.ModernConstants.cardBackground,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+                    borderSide: BorderSide(
+                      color: modern_constants.ModernConstants.textTertiary.withOpacity(0.3),
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: Colors.blue,
+                    borderSide: BorderSide(
+                      color: modern_constants.ModernConstants.primaryPurple,
                       width: 2,
                     ),
                   ),
@@ -350,17 +342,29 @@ class _AddChartScreenState extends State<AddChartScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            ElevatedButton(
-              onPressed: _addTechnicalIndicator,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.all(16),
-                shape: RoundedRectangleBorder(
+            Container(
+              decoration: BoxDecoration(
+                gradient: modern_constants.ModernConstants.primaryGradient,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _addTechnicalIndicator,
                   borderRadius: BorderRadius.circular(12),
+                  child: const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Icon(Icons.add, color: Colors.white),
+                  ),
                 ),
               ),
-              child: const Icon(Icons.add),
             ),
           ],
         ),
@@ -371,10 +375,10 @@ class _AddChartScreenState extends State<AddChartScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A2E),
+              color: modern_constants.ModernConstants.cardBackground,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Colors.blue.withOpacity(0.3),
+                color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.3),
               ),
             ),
             child: Wrap(
@@ -386,7 +390,7 @@ class _AddChartScreenState extends State<AddChartScreen> {
                 return Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.2),
+                    color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -394,8 +398,8 @@ class _AddChartScreenState extends State<AddChartScreen> {
                     children: [
                       Text(
                         indicator,
-                        style: const TextStyle(
-                          color: Colors.blue,
+                        style: TextStyle(
+                          color: modern_constants.ModernConstants.primaryPurple,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
@@ -403,9 +407,9 @@ class _AddChartScreenState extends State<AddChartScreen> {
                       const SizedBox(width: 4),
                       GestureDetector(
                         onTap: () => _removeTechnicalIndicator(index),
-                        child: const Icon(
+                        child: Icon(
                           Icons.close,
-                          color: Colors.blue,
+                          color: modern_constants.ModernConstants.primaryPurple,
                           size: 14,
                         ),
                       ),
@@ -424,10 +428,10 @@ class _AddChartScreenState extends State<AddChartScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A2E),
+        color: modern_constants.ModernConstants.cardBackground,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.blue.withOpacity(0.3),
+          color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.3),
         ),
       ),
       child: Column(
@@ -435,14 +439,18 @@ class _AddChartScreenState extends State<AddChartScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.settings_rounded, color: Colors.blue, size: 20),
+              Icon(
+                Icons.settings_rounded, 
+                color: modern_constants.ModernConstants.primaryPurple, 
+                size: 20
+              ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Chart Settings',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF8A94A6),
-                  fontWeight: FontWeight.w500,
+                  color: modern_constants.ModernConstants.textSecondary,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -453,10 +461,10 @@ class _AddChartScreenState extends State<AddChartScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Show Grid',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: modern_constants.ModernConstants.textPrimary,
                   fontSize: 14,
                 ),
               ),
@@ -467,7 +475,7 @@ class _AddChartScreenState extends State<AddChartScreen> {
                     _chartSettings['showGrid'] = value;
                   });
                 },
-                activeColor: Colors.blue,
+                activeColor: modern_constants.ModernConstants.primaryPurple,
               ),
             ],
           ),
@@ -476,10 +484,10 @@ class _AddChartScreenState extends State<AddChartScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Show Volume',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: modern_constants.ModernConstants.textPrimary,
                   fontSize: 14,
                 ),
               ),
@@ -490,7 +498,7 @@ class _AddChartScreenState extends State<AddChartScreen> {
                     _chartSettings['showVolume'] = value;
                   });
                 },
-                activeColor: Colors.blue,
+                activeColor: modern_constants.ModernConstants.primaryPurple,
               ),
             ],
           ),
@@ -499,10 +507,10 @@ class _AddChartScreenState extends State<AddChartScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Theme',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: modern_constants.ModernConstants.textPrimary,
                   fontSize: 14,
                 ),
               ),
@@ -513,13 +521,16 @@ class _AddChartScreenState extends State<AddChartScreen> {
                     _chartSettings['theme'] = value!;
                   });
                 },
-                dropdownColor: const Color(0xFF1A1A2E),
+                dropdownColor: modern_constants.ModernConstants.cardBackground,
                 items: ['dark', 'light'].map((String theme) {
                   return DropdownMenuItem<String>(
                     value: theme,
                     child: Text(
                       theme.toUpperCase(),
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                      style: TextStyle(
+                        color: modern_constants.ModernConstants.textPrimary, 
+                        fontSize: 12
+                      ),
                     ),
                   );
                 }).toList(),
@@ -535,10 +546,10 @@ class _AddChartScreenState extends State<AddChartScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A2E),
+        color: modern_constants.ModernConstants.cardBackground,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.blue.withOpacity(0.3),
+          color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.3),
         ),
       ),
       child: Column(
@@ -546,14 +557,18 @@ class _AddChartScreenState extends State<AddChartScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.data_usage_rounded, color: Colors.blue, size: 20),
+              Icon(
+                Icons.data_usage_rounded, 
+                color: modern_constants.ModernConstants.primaryPurple, 
+                size: 20
+              ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Chart Data',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF8A94A6),
-                  fontWeight: FontWeight.w500,
+                  color: modern_constants.ModernConstants.textSecondary,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -562,17 +577,17 @@ class _AddChartScreenState extends State<AddChartScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Data Points:',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: modern_constants.ModernConstants.textPrimary,
                   fontSize: 14,
                 ),
               ),
               Text(
                 '${_dataPoints.length}',
-                style: const TextStyle(
-                  color: Colors.blue,
+                style: TextStyle(
+                  color: modern_constants.ModernConstants.primaryPurple,
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
@@ -584,17 +599,17 @@ class _AddChartScreenState extends State<AddChartScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Date Range:',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: modern_constants.ModernConstants.textPrimary,
                     fontSize: 14,
                   ),
                 ),
                 Text(
                   '${_dataPoints.first.timestamp.day}/${_dataPoints.first.timestamp.month} - ${_dataPoints.last.timestamp.day}/${_dataPoints.last.timestamp.month}',
-                  style: const TextStyle(
-                    color: Colors.blue,
+                  style: TextStyle(
+                    color: modern_constants.ModernConstants.primaryPurple,
                     fontSize: 12,
                   ),
                 ),
@@ -602,19 +617,28 @@ class _AddChartScreenState extends State<AddChartScreen> {
             ),
           ],
           const SizedBox(height: 12),
-          ElevatedButton(
-            onPressed: _generateSampleDataPoints,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue.withOpacity(0.2),
-              foregroundColor: Colors.blue,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+          Container(
+            decoration: BoxDecoration(
+              color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: const Text(
-              'Regenerate Sample Data',
-              style: TextStyle(fontSize: 12),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _generateSampleDataPoints,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Text(
+                    'Regenerate Sample Data',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: modern_constants.ModernConstants.primaryPurple,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -643,13 +667,13 @@ class _AddChartScreenState extends State<AddChartScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.blue.withOpacity(0.1),
-            Colors.indigo.withOpacity(0.1),
+            modern_constants.ModernConstants.primaryPurple.withOpacity(0.1),
+            modern_constants.ModernConstants.primaryPurple.withOpacity(0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.blue.withOpacity(0.2),
+          color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.2),
         ),
       ),
       child: Row(
@@ -657,13 +681,20 @@ class _AddChartScreenState extends State<AddChartScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.2),
+              gradient: modern_constants.ModernConstants.primaryGradient,
               borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Icon(
               widget.chart == null ? Icons.add_chart : Icons.edit_note_rounded,
-              color: Colors.blue,
-              size: 32,
+              color: Colors.white,
+              size: 24,
             ),
           ),
           const SizedBox(width: 16),
@@ -673,9 +704,9 @@ class _AddChartScreenState extends State<AddChartScreen> {
               children: [
                 Text(
                   widget.chart == null ? 'Create Market Chart' : 'Edit Market Chart',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
+                  style: TextStyle(
+                    color: modern_constants.ModernConstants.textPrimary,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -684,8 +715,8 @@ class _AddChartScreenState extends State<AddChartScreen> {
                   widget.chart == null 
                     ? 'Add new market chart with technical analysis'
                     : 'Update chart information and settings',
-                  style: const TextStyle(
-                    color: Color(0xFF8A94A6),
+                  style: TextStyle(
+                    color: modern_constants.ModernConstants.textSecondary,
                     fontSize: 14,
                   ),
                 ),
@@ -711,14 +742,18 @@ class _AddChartScreenState extends State<AddChartScreen> {
       children: [
         Row(
           children: [
-            Icon(icon, color: Colors.blue, size: 20),
+            Icon(
+              icon, 
+              color: modern_constants.ModernConstants.primaryPurple, 
+              size: 20
+            ),
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF8A94A6),
-                fontWeight: FontWeight.w500,
+                color: modern_constants.ModernConstants.textSecondary,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -729,24 +764,26 @@ class _AddChartScreenState extends State<AddChartScreen> {
           maxLines: maxLines,
           keyboardType: keyboardType,
           validator: validator,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: Colors.white,
+            color: modern_constants.ModernConstants.textPrimary,
           ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: Color(0xFF8A94A6)),
+            hintStyle: TextStyle(color: modern_constants.ModernConstants.textTertiary),
             filled: true,
-            fillColor: const Color(0xFF1A1A2E),
+            fillColor: modern_constants.ModernConstants.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(
+                color: modern_constants.ModernConstants.textTertiary.withOpacity(0.3),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Colors.blue,
+              borderSide: BorderSide(
+                color: modern_constants.ModernConstants.primaryPurple,
                 width: 2,
               ),
             ),
@@ -778,14 +815,18 @@ class _AddChartScreenState extends State<AddChartScreen> {
       children: [
         Row(
           children: [
-            Icon(icon, color: Colors.blue, size: 20),
+            Icon(
+              icon, 
+              color: modern_constants.ModernConstants.primaryPurple, 
+              size: 20
+            ),
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF8A94A6),
-                fontWeight: FontWeight.w500,
+                color: modern_constants.ModernConstants.textSecondary,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -794,34 +835,36 @@ class _AddChartScreenState extends State<AddChartScreen> {
         DropdownButtonFormField<String>(
           value: value,
           onChanged: onChanged,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: Colors.white,
+            color: modern_constants.ModernConstants.textPrimary,
           ),
           decoration: InputDecoration(
             filled: true,
-            fillColor: const Color(0xFF1A1A2E),
+            fillColor: modern_constants.ModernConstants.cardBackground,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(
+                color: modern_constants.ModernConstants.textTertiary.withOpacity(0.3),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Colors.blue,
+              borderSide: BorderSide(
+                color: modern_constants.ModernConstants.primaryPurple,
                 width: 2,
               ),
             ),
             contentPadding: const EdgeInsets.all(16),
           ),
-          dropdownColor: const Color(0xFF1A1A2E),
+          dropdownColor: modern_constants.ModernConstants.cardBackground,
           items: items.map((String item) {
             return DropdownMenuItem<String>(
               value: item,
               child: Text(
                 item,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: modern_constants.ModernConstants.textPrimary),
               ),
             );
           }).toList(),
@@ -834,25 +877,29 @@ class _AddChartScreenState extends State<AddChartScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A2E),
+        color: modern_constants.ModernConstants.cardBackground,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.blue.withOpacity(0.3),
+          color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.3),
         ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.visibility_rounded, color: Colors.blue, size: 20),
-              SizedBox(width: 8),
+              Icon(
+                Icons.visibility_rounded, 
+                color: modern_constants.ModernConstants.primaryPurple, 
+                size: 20
+              ),
+              const SizedBox(width: 8),
               Text(
                 'Active Chart',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  color: modern_constants.ModernConstants.textPrimary,
                 ),
               ),
             ],
@@ -864,10 +911,10 @@ class _AddChartScreenState extends State<AddChartScreen> {
                 _isActive = value;
               });
             },
-            activeColor: Colors.blue,
-            activeTrackColor: Colors.blue.withOpacity(0.3),
-            inactiveThumbColor: const Color(0xFF8A94A6),
-            inactiveTrackColor: const Color(0xFF8A94A6).withOpacity(0.3),
+            activeColor: modern_constants.ModernConstants.primaryPurple,
+            activeTrackColor: modern_constants.ModernConstants.primaryPurple.withOpacity(0.3),
+            inactiveThumbColor: modern_constants.ModernConstants.textTertiary,
+            inactiveTrackColor: modern_constants.ModernConstants.textTertiary.withOpacity(0.3),
           ),
         ],
       ),
@@ -878,40 +925,54 @@ class _AddChartScreenState extends State<AddChartScreen> {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.all(24),
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _saveChart,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+      decoration: BoxDecoration(
+        gradient: modern_constants.ModernConstants.primaryGradient,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.3),
+            blurRadius: 15,
+            spreadRadius: 1,
+            offset: const Offset(0, 4),
           ),
-          elevation: 2,
-        ),
-        child: _isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(widget.chart == null ? Icons.add : Icons.update),
-                  const SizedBox(width: 8),
-                  Text(
-                    widget.chart == null ? 'Add Chart' : 'Update Chart',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _isLoading ? null : _saveChart,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
                     ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        widget.chart == null ? Icons.add : Icons.update,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        widget.chart == null ? 'Add Chart' : 'Update Chart',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+          ),
+        ),
       ),
     );
   }
@@ -968,7 +1029,7 @@ class _AddChartScreenState extends State<AddChartScreen> {
                 ),
               ],
             ),
-            backgroundColor: Colors.blue,
+            backgroundColor: modern_constants.ModernConstants.primaryPurple,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),

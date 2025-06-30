@@ -26,27 +26,27 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> with SingleTi
   String searchQuery = '';
   String? errorMessage;
 
-  // Tab data
+  // Tab data with modern colors
   final List<Map<String, dynamic>> _tabs = [
     {
       'title': 'All Transactions',
       'icon': Icons.list_alt_rounded,
-      'color': Color(0xFF10B981),
+      'color': ModernConstants.primaryPurple,
     },
     {
       'title': 'Currency Conversions',
       'icon': Icons.currency_exchange_rounded,
-      'color': Color(0xFF3B82F6),
+      'color': ModernConstants.textPrimary,
     },
     {
       'title': 'Transaction History',
       'icon': Icons.history_rounded,
-      'color': Color(0xFF8B5CF6),
+      'color': ModernConstants.primaryPurple,
     },
     {
       'title': 'User Activity',
       'icon': Icons.person_search_rounded,
-      'color': Color(0xFFF59E0B),
+      'color': ModernConstants.textPrimary,
     },
   ];
 
@@ -70,21 +70,21 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> with SingleTi
         errorMessage = null;
       });
 
-      // ✅ Load All Transactions (Conversion Transactions)
+      // Load All Transactions (Conversion Transactions)
       final conversionsQuery = await FirebaseFirestore.instance
           .collection('conversion_transactions')
           .orderBy('timestamp', descending: true)
           .limit(500)
           .get();
 
-      // ✅ Load Currency Conversion History
+      // Load Currency Conversion History
       final historyQuery = await FirebaseFirestore.instance
           .collection('currency_conversion_history')
           .orderBy('timestamp', descending: true)
           .limit(300)
           .get();
 
-      // ✅ Load User Activity (App Data)
+      // Load User Activity (App Data)
       final activityQuery = await FirebaseFirestore.instance
           .collection('app_data')
           .orderBy('timestamp', descending: true)
@@ -160,7 +160,6 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> with SingleTi
       print('- Currency Conversions: ${currencyConversions.length}');
       print('- Transaction History: ${transactionHistory.length}');
       print('- User Activity: ${userActivity.length}');
-
     } catch (e) {
       print('❌ Error loading data: $e');
       setState(() {
@@ -213,121 +212,151 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> with SingleTi
   Widget build(BuildContext context) {
     final isMobile = ResponsiveHelper.isMobile(context);
     
-    // ✅ FIX: Wrap everything in Scaffold to provide Material widget
     return Scaffold(
       backgroundColor: ModernConstants.backgroundColor,
-      appBar: AppBar(
-        backgroundColor: ModernConstants.backgroundColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_rounded,
-            color: ModernConstants.textPrimary,
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'All Transactions',
-          style: TextStyle(
-            color: ModernConstants.textPrimary,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: _loadAllData,
-            icon: Icon(
-              Icons.refresh_rounded,
-              color: ModernConstants.textSecondary,
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Padding(
-        padding: ResponsiveHelper.getScreenPadding(context),
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(),
-            SizedBox(height: isMobile ? 16 : 20),
-            _buildSearchBar(),
-            SizedBox(height: isMobile ? 16 : 20),
-            _buildTabBar(),
-            const SizedBox(height: 20),
-            Expanded(child: _buildTabContent()),
+            _buildModernHeader(),
+            Expanded(
+              child: Padding(
+                padding: ResponsiveHelper.getScreenPadding(context),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: isMobile ? 16 : 20),
+                    _buildSearchBar(),
+                    SizedBox(height: isMobile ? 16 : 20),
+                    _buildTabBar(),
+                    const SizedBox(height: 20),
+                    Expanded(child: _buildTabContent()),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildModernHeader() {
     final isMobile = ResponsiveHelper.isMobile(context);
     
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Transaction Overview',
-                style: TextStyle(
-                  color: ModernConstants.textPrimary,
-                  fontSize: ResponsiveHelper.getTitleFontSize(context),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (!isMobile) ...[
-                const SizedBox(height: 4),
-                Text(
-                  'Complete overview of all user transactions and activities',
-                  style: TextStyle(
-                    color: ModernConstants.textSecondary,
-                    fontSize: ResponsiveHelper.getSubtitleFontSize(context),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        if (!isMobile) ...[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF10B981), Color(0xFF059669)],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF10B981).withOpacity(0.3),
-                  blurRadius: 15,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.file_download_rounded, color: Colors.white, size: 18),
-                SizedBox(width: 6),
-                Text(
-                  'Export',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: ModernConstants.primaryGradient,
+        boxShadow: [
+          BoxShadow(
+            color: ModernConstants.primaryPurple.withOpacity(0.3),
+            blurRadius: 20,
+            spreadRadius: 0,
+            offset: const Offset(0, 10),
           ),
         ],
-      ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(isMobile ? 16 : 24),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.arrow_back_rounded,
+                      color: Colors.white,
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'All Transactions',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: ResponsiveHelper.getTitleFontSize(context),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (!isMobile) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Complete overview of all user transactions and activities',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: ResponsiveHelper.getSubtitleFontSize(context),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: IconButton(
+                    onPressed: _loadAllData,
+                    icon: const Icon(
+                      Icons.refresh_rounded,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                if (!isMobile) ...[
+                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.file_download_rounded, color: Colors.white, size: 18),
+                        SizedBox(width: 6),
+                        Text(
+                          'Export',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            if (isMobile) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Complete overview of all user transactions and activities',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
@@ -338,8 +367,16 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> with SingleTi
         gradient: ModernConstants.cardGradient,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: ModernConstants.textTertiary.withOpacity(0.2),
+          color: ModernConstants.primaryPurple.withOpacity(0.2),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: ModernConstants.primaryPurple.withOpacity(0.1),
+            blurRadius: 10,
+            spreadRadius: 0,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: TextField(
         onChanged: (value) => setState(() => searchQuery = value),
@@ -349,7 +386,7 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> with SingleTi
           hintStyle: TextStyle(color: ModernConstants.textTertiary),
           prefixIcon: Icon(
             Icons.search_rounded,
-            color: ModernConstants.textSecondary,
+            color: ModernConstants.primaryPurple,
           ),
           suffixIcon: searchQuery.isNotEmpty
               ? IconButton(
@@ -370,24 +407,38 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> with SingleTi
   Widget _buildTabBar() {
     final isMobile = ResponsiveHelper.isMobile(context);
     
-    return Material( // ✅ FIX: Wrap TabBar in Material widget
+    return Material(
       color: Colors.transparent,
       child: Container(
         decoration: BoxDecoration(
           gradient: ModernConstants.cardGradient,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: ModernConstants.textTertiary.withOpacity(0.2),
+            color: ModernConstants.primaryPurple.withOpacity(0.2),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: ModernConstants.primaryPurple.withOpacity(0.1),
+              blurRadius: 10,
+              spreadRadius: 0,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: TabBar(
           controller: _tabController,
           isScrollable: isMobile,
           indicator: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF10B981), Color(0xFF059669)],
-            ),
+            gradient: ModernConstants.primaryGradient,
             borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: ModernConstants.primaryPurple.withOpacity(0.3),
+                blurRadius: 8,
+                spreadRadius: 0,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           labelColor: Colors.white,
           unselectedLabelColor: ModernConstants.textSecondary,
@@ -446,31 +497,64 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> with SingleTi
 
     if (errorMessage != null) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, color: Colors.red, size: 48),
-            const SizedBox(height: 16),
-            Text(
-              'Error loading data',
-              style: TextStyle(
-                color: ModernConstants.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: ModernConstants.cardGradient,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.red.withOpacity(0.2),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.error_outline, color: Colors.red, size: 48),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              errorMessage!,
-              style: TextStyle(color: ModernConstants.textSecondary),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadAllData,
-              child: const Text('Retry'),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                'Error loading data',
+                style: TextStyle(
+                  color: ModernConstants.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                errorMessage!,
+                style: TextStyle(color: ModernConstants.textSecondary),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: ModernConstants.primaryGradient,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ElevatedButton(
+                  onPressed: _loadAllData,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Retry',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -544,7 +628,14 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> with SingleTi
       decoration: BoxDecoration(
         gradient: ModernConstants.cardGradient,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: ModernConstants.cardShadow,
+        boxShadow: [
+          BoxShadow(
+            color: ModernConstants.primaryPurple.withOpacity(0.1),
+            blurRadius: 10,
+            spreadRadius: 0,
+            offset: const Offset(0, 4),
+          ),
+        ],
         border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Column(
@@ -555,7 +646,12 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> with SingleTi
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
+                  gradient: LinearGradient(
+                    colors: [
+                      color.withOpacity(0.2),
+                      color.withOpacity(0.1),
+                    ],
+                  ),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
@@ -612,15 +708,23 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> with SingleTi
           const SizedBox(height: 12),
           Row(
             children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: color,
-                child: Text(
-                  userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [color, color.withOpacity(0.7)],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(
+                  child: Text(
+                    userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -650,7 +754,12 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> with SingleTi
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
+                  gradient: LinearGradient(
+                    colors: [
+                      color.withOpacity(0.2),
+                      color.withOpacity(0.1),
+                    ],
+                  ),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -684,7 +793,14 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> with SingleTi
       decoration: BoxDecoration(
         gradient: ModernConstants.cardGradient,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: ModernConstants.cardShadow,
+        boxShadow: [
+          BoxShadow(
+            color: ModernConstants.primaryPurple.withOpacity(0.1),
+            blurRadius: 10,
+            spreadRadius: 0,
+            offset: const Offset(0, 4),
+          ),
+        ],
         border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Row(
@@ -692,7 +808,12 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> with SingleTi
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
+              gradient: LinearGradient(
+                colors: [
+                  color.withOpacity(0.2),
+                  color.withOpacity(0.1),
+                ],
+              ),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -734,7 +855,12 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> with SingleTi
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
+              gradient: LinearGradient(
+                colors: [
+                  color.withOpacity(0.2),
+                  color.withOpacity(0.1),
+                ],
+              ),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -765,7 +891,14 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> with SingleTi
       decoration: BoxDecoration(
         gradient: ModernConstants.cardGradient,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: ModernConstants.cardShadow,
+        boxShadow: [
+          BoxShadow(
+            color: ModernConstants.primaryPurple.withOpacity(0.1),
+            blurRadius: 10,
+            spreadRadius: 0,
+            offset: const Offset(0, 4),
+          ),
+        ],
         border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Row(
@@ -773,7 +906,12 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> with SingleTi
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
+              gradient: LinearGradient(
+                colors: [
+                  color.withOpacity(0.2),
+                  color.withOpacity(0.1),
+                ],
+              ),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -815,7 +953,12 @@ class _AllTransactionsPageState extends State<AllTransactionsPage> with SingleTi
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
+              gradient: LinearGradient(
+                colors: [
+                  color.withOpacity(0.2),
+                  color.withOpacity(0.1),
+                ],
+              ),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(

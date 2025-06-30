@@ -3,6 +3,8 @@ import 'package:currency_converter/screen/login.dart';
 import 'package:currency_converter/screen/register.dart';
 import 'package:currency_converter/screen/profile_completion_screen.dart';
 import 'package:currency_converter/screen/admin/admin_dashboard.dart';
+import 'package:currency_converter/services/alert-service.dart';
+import 'package:currency_converter/services/simple-background-service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -37,6 +39,20 @@ void main() async {
     ),
   );
 
+  // Initialize Simple Alert Services
+  try {
+    final alertService = SimpleAlertService();
+    await alertService.initNotifications();
+    
+    // Initialize and start background service
+    SimpleBackgroundService.initialize();
+    SimpleBackgroundService.startChecking();
+    
+    print('Simple alert services initialized successfully');
+  } catch (e) {
+    print('Alert service initialization error: $e');
+  }
+
   runApp(const CurrencyConverterApp());
 }
 
@@ -62,7 +78,6 @@ class CurrencyConverterApp extends StatelessWidget {
           scaffoldBackgroundColor: const Color(0xFF0A0A1A),
         ),
         home: const AppInitializer(),
-        // Remove all route-related properties to fix the error
       ),
     );
   }
@@ -92,6 +107,13 @@ class _AppInitializerState extends State<AppInitializer> {
         _showSplash = false;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    // Clean up background service when app is disposed
+    SimpleBackgroundService.stopChecking();
+    super.dispose();
   }
 
   @override

@@ -1,13 +1,14 @@
 import 'package:currency_converter/auth/auth_provider.dart';
 import 'package:currency_converter/screen/CurrencyNewsScreen.dart';
 import 'package:currency_converter/screen/Portfolio_Screen.dart';
-import 'package:currency_converter/screen/admin/components/add_article.dart';
+import 'package:currency_converter/screen/addarticlescreen.dart';
+import 'package:currency_converter/screen/admin/components/admin_add_article.dart';
 import 'package:currency_converter/screen/edit_profile_screen.dart';
 import 'package:currency_converter/screen/feedback_screen.dart';
 import 'package:currency_converter/screen/help_support.dart';
 import 'package:currency_converter/screen/news_screen.dart';
 import 'package:currency_converter/screen/notic_setting.dart';
-import 'package:currency_converter/screen/rate_alert.dart';
+import 'package:currency_converter/screen/rate-alerts-list-screen.dart';
 import 'package:currency_converter/screen/notifications_inbox_screen.dart';
 import 'package:currency_converter/screen/admin/admin_dashboard.dart';
 import 'package:currency_converter/services/Enhanced_Notification.dart';
@@ -585,7 +586,7 @@ class FixedOverflowDrawer extends StatelessWidget {
           screen = const PortfolioScreen();
           break;
         case 'RateAlerts':
-          screen = const RateAlertsScreen();
+          screen = const SimpleAlertsListScreen(); // Updated to use simple alerts
           break;
         case 'CurrencyNews':
           screen = const CurrencyNewsScreen();
@@ -593,9 +594,8 @@ class FixedOverflowDrawer extends StatelessWidget {
         case 'AddArticle':
           final authProvider = Provider.of<AuthProvider>(context, listen: false);
           if (_isUserAdminStatic(authProvider)) {
-            screen = const AddArticleScreen();
+            screen = const userArticleScreen();
           } else {
-            // For normal users, do not show or navigate to AddArticle at all
             _showMessage(context, 'Access Denied: Admin privileges required');
             return;
           }

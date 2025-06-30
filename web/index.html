@@ -6,13 +6,15 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Currency Converter App">
 
+  <!-- Google Sign-In Client Library -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="currency_converter">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <link rel="icon" type="image/png" href="favicon.png"/>
-
   <title>Currency Converter</title>
   <link rel="manifest" href="manifest.json">
 
@@ -45,58 +47,33 @@
       100% { transform: rotate(360deg); }
     }
   </style>
+
+  <!-- Google Sign-In Initialization -->
+  <script>
+    // Global flag for Flutter to check
+    window.googleSignInInitialized = false;
+    
+    // Initialize Google Identity Services
+    function initializeGoogleSignIn() {
+      if (window.google) {
+        console.log('Google Identity Services loaded');
+        window.googleSignInInitialized = true;
+      } else {
+        console.log('Google Identity Services not yet loaded');
+        setTimeout(initializeGoogleSignIn, 500);
+      }
+    }
+    
+    // Start initialization when page loads
+    window.addEventListener('load', function() {
+      initializeGoogleSignIn();
+    });
+  </script>
 </head>
 <body>
   <div id="loading" class="loading">
     <div class="spinner"></div>
   </div>
-
-  <!-- SIMPLIFIED GOOGLE SIGN-IN SETUP -->
-  <script>
-    // Set global config BEFORE loading any Google scripts
-    window.googleSignInConfig = {
-      client_id: '947979021795-l82ch0gmiosdpbob2166o3sfpq3keuuj.apps.googleusercontent.com'
-    };
-    
-    // Simple flag
-    window.googleSignInInitialized = false;
-  </script>
-
-  <!-- Load Google Platform Library SYNCHRONOUSLY -->
-  <script src="https://apis.google.com/js/platform.js"></script>
-  
-  <!-- Initialize immediately after platform loads -->
-  <script>
-    function initGoogleSignIn() {
-      console.log('Starting Google Sign-In initialization...');
-      
-      if (typeof gapi === 'undefined') {
-        console.error('GAPI not loaded!');
-        return;
-      }
-      
-      gapi.load('auth2', function() {
-        console.log('Auth2 module loaded, initializing...');
-        
-        gapi.auth2.init({
-          client_id: '947979021795-l82ch0gmiosdpbob2166o3sfpq3keuuj.apps.googleusercontent.com'
-        }).then(function(authInstance) {
-          console.log('✅ Google Sign-In initialized successfully!');
-          window.googleSignInInitialized = true;
-          window.googleAuthInstance = authInstance;
-        }).catch(function(error) {
-          console.error('❌ Google Sign-In initialization failed:', error);
-        });
-      });
-    }
-    
-    // Initialize immediately
-    initGoogleSignIn();
-    
-    // Backup initialization
-    setTimeout(initGoogleSignIn, 1000);
-    setTimeout(initGoogleSignIn, 3000);
-  </script>
 
   <script>
     const serviceWorkerVersion = null;

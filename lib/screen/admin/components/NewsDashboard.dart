@@ -1,5 +1,5 @@
 import 'package:currency_converter/model/article_model.dart';
-import 'package:currency_converter/screen/admin/components/add_article.dart';
+import 'package:currency_converter/screen/admin/components/admin_add_article.dart';
 import 'package:currency_converter/screen/admin/components/manage_articles_screen.dart';
 import 'package:flutter/material.dart';
 import '../../../utils/modern_constants.dart';
@@ -147,7 +147,7 @@ class _AdminNewsDashboardState extends State<AdminNewsDashboard> {
                 () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const AddArticleScreen(),
+                    builder: (context) => const AdminArticleScreen(),
                   ),
                 ),
               ),
@@ -362,7 +362,7 @@ class _AdminNewsDashboardState extends State<AdminNewsDashboard> {
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => AddArticleScreen(article: article),
+                    builder: (context) => AdminArticleScreen(article: article),
                   ),
                 ),
                 icon: const Icon(

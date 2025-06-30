@@ -1,10 +1,13 @@
 import 'package:currency_converter/screen/admin/components/All_Transactions.dart';
 import 'package:currency_converter/screen/admin/components/add_analysis_screen.dart';
-import 'package:currency_converter/screen/admin/components/add_article.dart';
+import 'package:currency_converter/screen/admin/components/admin_add_article.dart';
 import 'package:currency_converter/screen/admin/components/add_chart_screen.dart';
 import 'package:currency_converter/screen/admin/components/add_trend_screen.dart';
+import 'package:currency_converter/screen/admin/components/manage_analysis_screen.dart';
 import 'package:currency_converter/screen/admin/components/manage_articles_screen.dart';
+import 'package:currency_converter/screen/admin/components/manage_charts_screen.dart';
 import 'package:currency_converter/screen/admin/components/manage_transaction.dart';
+import 'package:currency_converter/screen/admin/components/manage_trends_screen.dart';
 import 'package:currency_converter/screen/mainscreen.dart';
 import 'package:currency_converter/auth/auth_provider.dart';
 import 'package:flutter/material.dart';
@@ -64,26 +67,19 @@ class _AdminDrawerState extends State<AdminDrawer> {
     },
     {
       'icon': Icons.article_rounded,
-      'title': 'News Management',
+      'title': 'Content Management',
       'index': 20,
       'hasSubmenu': true,
       'color': Colors.purple,
       'submenu': [
         {'title': 'Add Article', 'index': 202},
         {'title': 'Manage Articles', 'index': 203},
-      ],
-    },
-    {
-      'icon': Icons.trending_up_rounded,
-      'title': 'Market Data',
-      'index': 30,
-      'hasSubmenu': true,
-      'color': Colors.orange,
-      'submenu': [
         {'title': 'Add Trend', 'index': 301},
+        {'title': 'Manage Trends', 'index': 305},
         {'title': 'Add Analysis', 'index': 302},
+        {'title': 'Manage Analysis', 'index': 306},
         {'title': 'Add Chart', 'index': 303},
-        {'title': 'Manage Market Data', 'index': 304},
+        {'title': 'Manage Charts', 'index': 307},
       ],
     },
     {
@@ -156,7 +152,7 @@ class _AdminDrawerState extends State<AdminDrawer> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const AddArticleScreen(),
+            builder: (context) => const AdminArticleScreen(),
           ),
         );
         break;
@@ -189,6 +185,30 @@ class _AdminDrawerState extends State<AdminDrawer> {
           context,
           MaterialPageRoute(
             builder: (context) => const AddChartScreen(),
+          ),
+        );
+        break;
+      case 305: // Manage Trends
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ManageTrendsScreen(),
+          ),
+        );
+        break;
+      case 306: // Manage Analysis
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ManageAnalysisScreen(),
+          ),
+        );
+        break;
+      case 307: // Manage Charts
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ManageChartsScreen(),
           ),
         );
         break;
@@ -630,9 +650,15 @@ class _AdminDrawerState extends State<AdminDrawer> {
         return Icons.edit_note_rounded;
       case 'Add Trend':
         return Icons.trending_up_rounded;
+      case 'Manage Trends':
+        return Icons.trending_up_rounded;
       case 'Add Analysis':
         return Icons.analytics_rounded;
+      case 'Manage Analysis':
+        return Icons.analytics_rounded;
       case 'Add Chart':
+        return Icons.show_chart_rounded;
+      case 'Manage Charts':
         return Icons.show_chart_rounded;
       case 'Manage Market Data':
         return Icons.data_usage_rounded;
@@ -884,7 +910,6 @@ class _AdminDrawerState extends State<AdminDrawer> {
     );
   }
 
-  // FIXED: Simplified logout dialog - let AuthProvider handle navigation automatically
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -984,20 +1009,13 @@ class _AdminDrawerState extends State<AdminDrawer> {
                       ? null
                       : () async {
                           try {
-                            // Close the dialog first
                             Navigator.of(dialogContext).pop();
-                            
-                            // Perform logout - AuthProvider will handle navigation automatically
                             bool success = await authProvider.logoutUser();
-                            
-                            // Show success message only if logout was successful
-                            // Note: We don't need to navigate manually as AuthProvider handles it
                             if (success) {
                               print('✅ Admin logout successful - AuthProvider will handle navigation');
                             }
                           } catch (e) {
                             print('❌ Logout error: $e');
-                            // Only show error if something goes wrong
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
