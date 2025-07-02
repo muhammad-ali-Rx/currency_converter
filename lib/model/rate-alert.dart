@@ -27,28 +27,23 @@ class SimpleRateAlert {
       'toCurrency': toCurrency,
       'targetRate': targetRate,
       'condition': condition,
-      'createdAt': createdAt.toIso8601String(), // Always save as string
+      'createdAt': createdAt.toIso8601String(),
       'isActive': isActive,
     };
   }
 
-  // Create from Map (Firebase data) - FIXED VERSION
+  // Create from Map (Firebase data)
   factory SimpleRateAlert.fromMap(Map<String, dynamic> map) {
     DateTime parsedDate;
     
-    // Handle different types of createdAt field
     final createdAtField = map['createdAt'];
     
     if (createdAtField is Timestamp) {
-      // Firebase Timestamp object
       parsedDate = createdAtField.toDate();
     } else if (createdAtField is String) {
-      // ISO string
       parsedDate = DateTime.parse(createdAtField);
     } else {
-      // Fallback to current time
       parsedDate = DateTime.now();
-      print('Warning: createdAt field type not recognized, using current time');
     }
     
     return SimpleRateAlert(
@@ -60,5 +55,10 @@ class SimpleRateAlert {
       createdAt: parsedDate,
       isActive: map['isActive'] ?? true,
     );
+  }
+
+  @override
+  String toString() {
+    return 'SimpleRateAlert(${fromCurrency}/${toCurrency} $condition $targetRate)';
   }
 }

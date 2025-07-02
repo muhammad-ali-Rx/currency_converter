@@ -1,4 +1,5 @@
 import 'package:currency_converter/screen/admin/components/All_Transactions.dart';
+import 'package:currency_converter/screen/admin/components/ManageAlertScreen.dart';
 import 'package:currency_converter/screen/admin/components/add_analysis_screen.dart';
 import 'package:currency_converter/screen/admin/components/admin_add_article.dart';
 import 'package:currency_converter/screen/admin/components/add_chart_screen.dart';
@@ -8,6 +9,7 @@ import 'package:currency_converter/screen/admin/components/manage_articles_scree
 import 'package:currency_converter/screen/admin/components/manage_charts_screen.dart';
 import 'package:currency_converter/screen/admin/components/manage_transaction.dart';
 import 'package:currency_converter/screen/admin/components/manage_trends_screen.dart';
+import 'package:currency_converter/screen/admin/components/show_alerts_screen.dart';
 import 'package:currency_converter/screen/mainscreen.dart';
 import 'package:currency_converter/auth/auth_provider.dart';
 import 'package:flutter/material.dart';
@@ -101,7 +103,7 @@ class _AdminDrawerState extends State<AdminDrawer> {
       'color': Colors.indigo,
       'submenu': [
         {'title': 'Show Alerts', 'index': 4},
-        {'title': 'Add Alert', 'index': 4},
+        {'title': 'Manage Alert', 'index': 5},
       ],
     },
     {
@@ -132,9 +134,20 @@ class _AdminDrawerState extends State<AdminDrawer> {
       case 101: // All Transactions
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => const AllTransactionsPage(),
-          ),
+          MaterialPageRoute(builder: (context) => const AllTransactionsPage()),
+        );
+        break;
+      // create show alert navigation
+      case 4: // Show Alerts
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ShowAlertsScreen()),
+        );
+        break;
+      case 5: // Manage Alert
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ManageAlertsScreen()),
         );
         break;
       case 102: // Manage Transactions
@@ -151,65 +164,49 @@ class _AdminDrawerState extends State<AdminDrawer> {
       case 202: // Add Article
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => const AdminArticleScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const AdminArticleScreen()),
         );
         break;
       case 203: // Manage Articles
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => const ManageArticlesScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const ManageArticlesScreen()),
         );
         break;
       case 301: // Add Trend
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => const AddTrendScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const AddTrendScreen()),
         );
         break;
       case 302: // Add Analysis
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => const AddAnalysisScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const AddAnalysisScreen()),
         );
         break;
       case 303: // Add Chart
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => const AddChartScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const AddChartScreen()),
         );
         break;
       case 305: // Manage Trends
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => const ManageTrendsScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const ManageTrendsScreen()),
         );
         break;
       case 306: // Manage Analysis
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => const ManageAnalysisScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const ManageAnalysisScreen()),
         );
         break;
       case 307: // Manage Charts
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => const ManageChartsScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const ManageChartsScreen()),
         );
         break;
       case 304: // Manage Market Data
@@ -224,147 +221,153 @@ class _AdminDrawerState extends State<AdminDrawer> {
   void _showDeleteTransactionsDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: modern_constants.ModernConstants.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.delete_forever_rounded,
-                color: Colors.red,
-                size: 20,
-              ),
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: modern_constants.ModernConstants.cardBackground,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            const SizedBox(width: 12),
-            Text(
-              'Delete Transactions',
-              style: TextStyle(
-                color: modern_constants.ModernConstants.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.delete_forever_rounded,
+                    color: Colors.red,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Delete Transactions',
+                  style: TextStyle(
+                    color: modern_constants.ModernConstants.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        content: const Text(
-          'This feature is coming soon.',
-          style: TextStyle(
-            color: modern_constants.ModernConstants.textSecondary,
-            fontSize: 14,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              'OK',
+            content: const Text(
+              'This feature is coming soon.',
               style: TextStyle(
                 color: modern_constants.ModernConstants.textSecondary,
-                fontWeight: FontWeight.w600,
+                fontSize: 14,
               ),
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text(
+                  'OK',
+                  style: TextStyle(
+                    color: modern_constants.ModernConstants.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
   void _showComingSoonDialog(String feature) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: modern_constants.ModernConstants.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                Icons.construction_rounded,
-                color: modern_constants.ModernConstants.primaryPurple,
-                size: 20,
-              ),
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: modern_constants.ModernConstants.cardBackground,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            const SizedBox(width: 12),
-            const Text(
-              'Coming Soon',
-              style: TextStyle(
-                color: modern_constants.ModernConstants.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '$feature feature is under development.',
-              style: const TextStyle(
-                color: modern_constants.ModernConstants.textSecondary,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: modern_constants.ModernConstants.primaryPurple,
-                    size: 16,
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: modern_constants.ModernConstants.primaryPurple
+                        .withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'This feature will be available in the next update.',
-                      style: TextStyle(
-                        color: modern_constants.ModernConstants.primaryPurple,
-                        fontSize: 12,
-                      ),
+                  child: Icon(
+                    Icons.construction_rounded,
+                    color: modern_constants.ModernConstants.primaryPurple,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Coming Soon',
+                  style: TextStyle(
+                    color: modern_constants.ModernConstants.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$feature feature is under development.',
+                  style: const TextStyle(
+                    color: modern_constants.ModernConstants.textSecondary,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: modern_constants.ModernConstants.primaryPurple
+                        .withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: modern_constants.ModernConstants.primaryPurple
+                          .withOpacity(0.3),
                     ),
                   ),
-                ],
-              ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: modern_constants.ModernConstants.primaryPurple,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'This feature will be available in the next update.',
+                          style: TextStyle(
+                            color:
+                                modern_constants.ModernConstants.primaryPurple,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'OK',
-              style: TextStyle(
-                color: modern_constants.ModernConstants.primaryPurple,
-                fontWeight: FontWeight.w600,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  'OK',
+                  style: TextStyle(
+                    color: modern_constants.ModernConstants.primaryPurple,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -379,7 +382,9 @@ class _AdminDrawerState extends State<AdminDrawer> {
           end: Alignment.bottomCenter,
           colors: [
             modern_constants.ModernConstants.sidebarBackground,
-            modern_constants.ModernConstants.sidebarBackground.withOpacity(0.95),
+            modern_constants.ModernConstants.sidebarBackground.withOpacity(
+              0.95,
+            ),
             const Color(0xFF1a1a2e),
           ],
         ),
@@ -405,7 +410,9 @@ class _AdminDrawerState extends State<AdminDrawer> {
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: modern_constants.ModernConstants.textTertiary.withOpacity(0.1),
+            color: modern_constants.ModernConstants.textTertiary.withOpacity(
+              0.1,
+            ),
           ),
         ),
       ),
@@ -466,7 +473,7 @@ class _AdminDrawerState extends State<AdminDrawer> {
         return Column(
           children: [
             _buildMenuItem(item, isSelected, isExpanded, color),
-            if (isExpanded && item['hasSubmenu'] == true) 
+            if (isExpanded && item['hasSubmenu'] == true)
               _buildSubmenu(item, color),
           ],
         );
@@ -498,22 +505,23 @@ class _AdminDrawerState extends State<AdminDrawer> {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              gradient: isSelected ? modern_constants.ModernConstants.primaryGradient : null,
-              color: isExpanded && !isSelected
-                  ? color.withOpacity(0.1)
-                  : null,
+              gradient:
+                  isSelected
+                      ? modern_constants.ModernConstants.primaryGradient
+                      : null,
+              color: isExpanded && !isSelected ? color.withOpacity(0.1) : null,
               borderRadius: BorderRadius.circular(12),
-              border: isExpanded
-                  ? Border.all(color: color.withOpacity(0.3))
-                  : null,
+              border:
+                  isExpanded ? Border.all(color: color.withOpacity(0.3)) : null,
             ),
             child: Row(
               children: [
                 Icon(
                   item['icon'],
-                  color: isSelected
-                      ? Colors.white
-                      : isExpanded
+                  color:
+                      isSelected
+                          ? Colors.white
+                          : isExpanded
                           ? color
                           : modern_constants.ModernConstants.textSecondary,
                   size: 20,
@@ -523,13 +531,15 @@ class _AdminDrawerState extends State<AdminDrawer> {
                   child: Text(
                     item['title'],
                     style: TextStyle(
-                      color: isSelected
-                          ? Colors.white
-                          : isExpanded
+                      color:
+                          isSelected
+                              ? Colors.white
+                              : isExpanded
                               ? modern_constants.ModernConstants.textPrimary
                               : modern_constants.ModernConstants.textSecondary,
                       fontSize: 14,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
                 ),
@@ -538,9 +548,10 @@ class _AdminDrawerState extends State<AdminDrawer> {
                     isExpanded
                         ? Icons.keyboard_arrow_up
                         : Icons.keyboard_arrow_down,
-                    color: isSelected
-                        ? Colors.white
-                        : isExpanded
+                    color:
+                        isSelected
+                            ? Colors.white
+                            : isExpanded
                             ? color
                             : modern_constants.ModernConstants.textSecondary,
                     size: 16,
@@ -560,78 +571,80 @@ class _AdminDrawerState extends State<AdminDrawer> {
       margin: const EdgeInsets.only(left: 16, bottom: 8),
       decoration: BoxDecoration(
         border: Border(
-          left: BorderSide(
-            color: color.withOpacity(0.3),
-            width: 2,
-          ),
+          left: BorderSide(color: color.withOpacity(0.3), width: 2),
         ),
       ),
       child: Column(
-        children: submenuItems.map((submenuItem) {
-          final isDeleteItem = submenuItem['index'] == 105;
-          
-          return Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                _handleNavigation(submenuItem['index'], submenuItem['title']);
-              },
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: isDeleteItem 
-                    ? Colors.red.withOpacity(0.1)
-                    : color.withOpacity(0.05),
+        children:
+            submenuItems.map((submenuItem) {
+              final isDeleteItem = submenuItem['index'] == 105;
+
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    _handleNavigation(
+                      submenuItem['index'],
+                      submenuItem['title'],
+                    );
+                  },
                   borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 4,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: isDeleteItem
-                          ? Colors.red.withOpacity(0.8)
-                          : color.withOpacity(0.8),
-                        shape: BoxShape.circle,
-                      ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
                     ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      _getSubmenuIcon(submenuItem['title']),
-                      size: 12,
-                      color: isDeleteItem
-                        ? Colors.red.withOpacity(0.7)
-                        : color.withOpacity(0.7),
+                    decoration: BoxDecoration(
+                      color:
+                          isDeleteItem
+                              ? Colors.red.withOpacity(0.1)
+                              : color.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        submenuItem['title'],
-                        style: TextStyle(
-                          color: isDeleteItem
-                            ? Colors.red
-                            : color,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 4,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color:
+                                isDeleteItem
+                                    ? Colors.red.withOpacity(0.8)
+                                    : color.withOpacity(0.8),
+                            shape: BoxShape.circle,
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          _getSubmenuIcon(submenuItem['title']),
+                          size: 12,
+                          color:
+                              isDeleteItem
+                                  ? Colors.red.withOpacity(0.7)
+                                  : color.withOpacity(0.7),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            submenuItem['title'],
+                            style: TextStyle(
+                              color: isDeleteItem ? Colors.red : color,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 10,
+                          color: color.withOpacity(0.6),
+                        ),
+                      ],
                     ),
-                    Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 10,
-                      color: color.withOpacity(0.6),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          );
-        }).toList(),
+              );
+            }).toList(),
       ),
     );
   }
@@ -688,9 +701,7 @@ class _AdminDrawerState extends State<AdminDrawer> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const Mainscreen(),
-              ),
+              MaterialPageRoute(builder: (context) => const Mainscreen()),
             );
           },
           borderRadius: BorderRadius.circular(12),
@@ -738,7 +749,10 @@ class _AdminDrawerState extends State<AdminDrawer> {
           return Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: authProvider.isLoading ? null : () => _showLogoutDialog(context),
+              onTap:
+                  authProvider.isLoading
+                      ? null
+                      : () => _showLogoutDialog(context),
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 padding: const EdgeInsets.all(14),
@@ -782,7 +796,9 @@ class _AdminDrawerState extends State<AdminDrawer> {
                       ),
                     const SizedBox(width: 8),
                     Text(
-                      authProvider.isLoading ? 'Logging out...' : 'Admin Logout',
+                      authProvider.isLoading
+                          ? 'Logging out...'
+                          : 'Admin Logout',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 13,
@@ -804,7 +820,11 @@ class _AdminDrawerState extends State<AdminDrawer> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(color: modern_constants.ModernConstants.textTertiary.withOpacity(0.1)),
+          top: BorderSide(
+            color: modern_constants.ModernConstants.textTertiary.withOpacity(
+              0.1,
+            ),
+          ),
         ),
       ),
       child: Column(
@@ -814,13 +834,15 @@ class _AdminDrawerState extends State<AdminDrawer> {
               final userData = authProvider.userData;
               final userName = userData?['name'] ?? 'Admin User';
               final userEmail = userData?['email'] ?? 'admin@currency.com';
-              final userInitial = userName.isNotEmpty ? userName[0].toUpperCase() : 'A';
+              final userInitial =
+                  userName.isNotEmpty ? userName[0].toUpperCase() : 'A';
               final userAvatar = userData?['profileImageBase64'] ?? '';
 
               return Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: modern_constants.ModernConstants.textTertiary.withOpacity(0.1),
+                  color: modern_constants.ModernConstants.textTertiary
+                      .withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
@@ -829,30 +851,46 @@ class _AdminDrawerState extends State<AdminDrawer> {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        gradient: userAvatar.isNotEmpty ? null : const LinearGradient(
-                          colors: [Color(0xFF4CAF50), Color(0xFF2196F3)],
-                        ),
+                        gradient:
+                            userAvatar.isNotEmpty
+                                ? null
+                                : const LinearGradient(
+                                  colors: [
+                                    Color(0xFF4CAF50),
+                                    Color(0xFF2196F3),
+                                  ],
+                                ),
                         borderRadius: BorderRadius.circular(8),
-                        border: userAvatar.isNotEmpty ? Border.all(
-                          color: modern_constants.ModernConstants.primaryPurple.withOpacity(0.3),
-                          width: 1,
-                        ) : null,
+                        border:
+                            userAvatar.isNotEmpty
+                                ? Border.all(
+                                  color: modern_constants
+                                      .ModernConstants
+                                      .primaryPurple
+                                      .withOpacity(0.3),
+                                  width: 1,
+                                )
+                                : null,
                       ),
-                      child: userAvatar.isNotEmpty 
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: _buildProfileImage(userAvatar, userInitial),
-                          )
-                        : Center(
-                            child: Text(
-                              userInitial,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
+                      child:
+                          userAvatar.isNotEmpty
+                              ? ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: _buildProfileImage(
+                                  userAvatar,
+                                  userInitial,
+                                ),
+                              )
+                              : Center(
+                                child: Text(
+                                  userInitial,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -862,7 +900,8 @@ class _AdminDrawerState extends State<AdminDrawer> {
                           Text(
                             userName,
                             style: const TextStyle(
-                              color: modern_constants.ModernConstants.textPrimary,
+                              color:
+                                  modern_constants.ModernConstants.textPrimary,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -872,7 +911,10 @@ class _AdminDrawerState extends State<AdminDrawer> {
                           Text(
                             userEmail,
                             style: const TextStyle(
-                              color: modern_constants.ModernConstants.textSecondary,
+                              color:
+                                  modern_constants
+                                      .ModernConstants
+                                      .textSecondary,
                               fontSize: 10,
                             ),
                             maxLines: 1,
@@ -962,25 +1004,16 @@ class _AdminDrawerState extends State<AdminDrawer> {
                 decoration: BoxDecoration(
                   color: Colors.orange.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.orange.withOpacity(0.3),
-                  ),
+                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: Colors.orange,
-                      size: 16,
-                    ),
+                    Icon(Icons.info_outline, color: Colors.orange, size: 16),
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
                         'You will be redirected to the login screen',
-                        style: TextStyle(
-                          color: Colors.orange,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: Colors.orange, fontSize: 12),
                       ),
                     ),
                   ],
@@ -992,7 +1025,10 @@ class _AdminDrawerState extends State<AdminDrawer> {
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
               style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
               ),
               child: const Text(
                 'Cancel',
@@ -1005,52 +1041,61 @@ class _AdminDrawerState extends State<AdminDrawer> {
             Consumer<AuthProvider>(
               builder: (context, authProvider, child) {
                 return ElevatedButton(
-                  onPressed: authProvider.isLoading
-                      ? null
-                      : () async {
-                          try {
-                            Navigator.of(dialogContext).pop();
-                            bool success = await authProvider.logoutUser();
-                            if (success) {
-                              print('✅ Admin logout successful - AuthProvider will handle navigation');
+                  onPressed:
+                      authProvider.isLoading
+                          ? null
+                          : () async {
+                            try {
+                              Navigator.of(dialogContext).pop();
+                              bool success = await authProvider.logoutUser();
+                              if (success) {
+                                print(
+                                  '✅ Admin logout successful - AuthProvider will handle navigation',
+                                );
+                              }
+                            } catch (e) {
+                              print('❌ Logout error: $e');
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Logout failed: ${e.toString()}',
+                                    ),
+                                    backgroundColor: Colors.red,
+                                    duration: const Duration(seconds: 3),
+                                  ),
+                                );
+                              }
                             }
-                          } catch (e) {
-                            print('❌ Logout error: $e');
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Logout failed: ${e.toString()}'),
-                                  backgroundColor: Colors.red,
-                                  duration: const Duration(seconds: 3),
-                                ),
-                              );
-                            }
-                          }
-                        },
+                          },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: authProvider.isLoading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
+                  child:
+                      authProvider.isLoading
+                          ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                          : const Text(
+                            'Logout',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        )
-                      : const Text(
-                          'Logout',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
                 );
               },
             ),

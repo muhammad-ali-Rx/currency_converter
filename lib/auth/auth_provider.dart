@@ -279,37 +279,37 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // Regular email/password login
-  Future<bool> loginUser({
-    required String email,
-    required String password,
-  }) async {
-    try {
-      setLoading(true);
-      clearError();
+ Future<bool> loginUser({
+  required String email,
+  required String password,
+}) async {
+  try {
+    setLoading(true);
+    clearError();
 
-      final UserCredential result = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+    final UserCredential result = await _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
 
-      if (result.user != null) {
-        _user = result.user;
-        await _loadUserDataFromFirestore();
-        await _checkAdminRole();
-        _isLoggedIn = true;
-        setLoading(false);
-        notifyListeners();
-        return true;
-      }
-
+    if (result.user != null) {
+      _user = result.user;
+      await _loadUserDataFromFirestore();
+      await _checkAdminRole();
+      _isLoggedIn = true;
       setLoading(false);
-      return false;
-    } catch (e) {
-      setError('Login failed: ${e.toString()}');
-      setLoading(false);
-      return false;
+      notifyListeners(); // This is crucial
+      return true;
     }
+
+    setLoading(false);
+    return false;
+  } catch (e) {
+    setError('Login failed: ${e.toString()}');
+    setLoading(false);
+    return false;
   }
+}
 
   // Google Sign In
   Future<bool> signInWithGoogle() async {

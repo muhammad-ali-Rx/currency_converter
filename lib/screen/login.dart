@@ -458,39 +458,42 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleLogin() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (!mounted) return;
+  if (!_formKey.currentState!.validate()) return;
+  if (!mounted) return;
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
-    try {
-      bool success = await authProvider.loginUser(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+  final authProvider = Provider.of<AuthProvider>(context, listen: false);
+  
+  try {
+    bool success = await authProvider.loginUser(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
+
+    if (success && mounted) {
+      // Remove the snackbar or show it very briefly
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Login successful! Welcome back! 🎉'),
+          backgroundColor: Color.fromARGB(255, 10, 108, 236),
+          duration: Duration(seconds: 1), // Reduced duration
+        ),
       );
-
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login successful! Welcome back! 🎉'),
-            backgroundColor: Color.fromARGB(255, 10, 108, 236),
-            duration: Duration(seconds: 2),
-          ),
-        );
-        // Navigation will be handled automatically by the Consumer in main.dart
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Login failed: ${e.toString()}'),
-            backgroundColor: const Color(0xFFEF4444),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
+      
+      // Let the AppInitializer handle navigation automatically
+      // No need for explicit navigation here
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Login failed: ${e.toString()}'),
+          backgroundColor: const Color(0xFFEF4444),
+          duration: const Duration(seconds: 3),
+        ),
+      );
     }
   }
+}
 
   void _handleGoogleSignIn() async {
     if (!mounted) return;

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:currency_converter/model/rate-alert.dart';
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'web-compatible-notification-service.dart';
 
 class SimpleAlertService {
@@ -10,16 +11,16 @@ class SimpleAlertService {
   SimpleAlertService._internal();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   final WebCompatibleNotificationService _notificationService = WebCompatibleNotificationService();
   bool _serviceInitialized = false;
-  
+
   /// Initialize service with web-compatible notifications
   Future<bool> initNotifications() async {
     if (_serviceInitialized) {
       print('✅ Service already initialized');
       return true;
     }
-
     try {
       print('🔄 Initializing SimpleAlertService...');
       print('📱 Platform: ${_notificationService.getPlatformInfo()}');
@@ -41,9 +42,57 @@ class SimpleAlertService {
     }
   }
 
-  /// Add alert to Firebase
+  /// Get current user information
+  Future<Map<String, dynamic>> _getCurrentUserInfo() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        // Try to get user info from users collection
+        final userDoc = await _firestore.collection('users').doc(user.uid).get();
+        
+        if (userDoc.exists) {
+          final userData = userDoc.data() ?? {};
+          return {
+            'uid': user.uid,
+            'name': userData['name'] ?? userData['displayName'] ?? user.displayName ?? 'Unknown User',
+            'email': userData['email'] ?? user.email ?? 'No email',
+            'photoURL': userData['photoURL'] ?? user.photoURL,
+          };
+        } else {
+          // Fallback to Firebase Auth user info
+          return {
+            'uid': user.uid,
+            'name': user.displayName ?? 'Unknown User',
+            'email': user.email ?? 'No email',
+            'photoURL': user.photoURL,
+          };
+        }
+      } else {
+        // No user logged in - create anonymous user info
+        return {
+          'uid': 'anonymous_${DateTime.now().millisecondsSinceEpoch}',
+          'name': 'Anonymous User',
+          'email': 'No email',
+          'photoURL': null,
+        };
+      }
+    } catch (e) {
+      print('❌ Error getting user info: $e');
+      return {
+        'uid': 'unknown_${DateTime.now().millisecondsSinceEpoch}',
+        'name': 'Unknown User',
+        'email': 'No email',
+        'photoURL': null,
+      };
+    }
+  }
+
+  /// Add alert to Firebase - WITH USER INFO
   Future<String?> addAlert(SimpleRateAlert alert) async {
     try {
+      // Get current user information
+      final userInfo = await _getCurrentUserInfo();
+      
       final alertData = {
         'fromCurrency': alert.fromCurrency,
         'toCurrency': alert.toCurrency,
@@ -51,10 +100,19 @@ class SimpleAlertService {
         'condition': alert.condition,
         'createdAt': FieldValue.serverTimestamp(),
         'isActive': alert.isActive,
+        
+        // ✅ ADD USER INFORMATION
+        'userId': userInfo['uid'],
+        'userInfo': userInfo,
       };
       
-      final docRef = await _firestore.collection('simple_alerts').add(alertData);
+      // Save to rate_alerts collection
+      final docRef = await _firestore.collection('rate_alerts').add(alertData);
+      
       print('✅ Alert added with ID: ${docRef.id}');
+      print('👤 User: ${userInfo['name']} (${userInfo['email']})');
+      print('💱 Alert: ${alert.fromCurrency}/${alert.toCurrency} ${alert.condition} ${alert.targetRate}');
+      
       return docRef.id;
     } catch (e) {
       print('❌ Error adding alert: $e');
@@ -62,45 +120,68 @@ class SimpleAlertService {
     }
   }
 
-  /// Get alerts stream
+  /// Get alerts stream - Filter by user
   Stream<List<SimpleRateAlert>> getAlertsStream() {
-    return _firestore
-        .collection('simple_alerts')
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) {
-      final alerts = <SimpleRateAlert>[];
-      
-      for (final doc in snapshot.docs) {
-        try {
-          final data = doc.data();
-          data['id'] = doc.id;
-          
-          final alert = SimpleRateAlert.fromMap(data);
-          alerts.add(alert);
-        } catch (e) {
-          print('❌ Error parsing alert document ${doc.id}: $e');
-          continue;
+    final user = _auth.currentUser;
+    
+    if (user != null) {
+      // Get only current user's alerts
+      return _firestore
+          .collection('rate_alerts')
+          .where('userId', isEqualTo: user.uid)
+          .snapshots()
+          .map((snapshot) {
+        final alerts = <SimpleRateAlert>[];
+        
+        for (final doc in snapshot.docs) {
+          try {
+            final data = doc.data();
+            data['id'] = doc.id;
+            
+            final alert = SimpleRateAlert.fromMap(data);
+            alerts.add(alert);
+          } catch (e) {
+            print('❌ Error parsing alert document ${doc.id}: $e');
+            continue;
+          }
         }
-      }
-      
-      return alerts;
-    });
+        
+        // Sort in memory instead of using Firestore orderBy
+        alerts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        
+        return alerts;
+      });
+    } else {
+      // Return empty stream if no user
+      return Stream.value([]);
+    }
   }
 
-  /// Get all alerts
+  /// Get all alerts - Filter by user
   Future<List<SimpleRateAlert>> getAlerts() async {
     try {
-      final snapshot = await _firestore
-          .collection('simple_alerts')
-          .orderBy('createdAt', descending: true)
-          .get();
+      final user = _auth.currentUser;
+      
+      QuerySnapshot snapshot;
+      
+      if (user != null) {
+        // Get user's alerts without orderBy
+        snapshot = await _firestore
+            .collection('rate_alerts')
+            .where('userId', isEqualTo: user.uid)
+            .get();
+      } else {
+        // Get all alerts without orderBy
+        snapshot = await _firestore
+            .collection('rate_alerts')
+            .get();
+      }
       
       final alerts = <SimpleRateAlert>[];
       
       for (final doc in snapshot.docs) {
         try {
-          final data = doc.data();
+          final data = doc.data() as Map<String, dynamic>;
           data['id'] = doc.id;
           
           final alert = SimpleRateAlert.fromMap(data);
@@ -110,6 +191,9 @@ class SimpleAlertService {
           continue;
         }
       }
+      
+      // Sort in memory instead of using Firestore orderBy
+      alerts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       
       print('✅ Successfully loaded ${alerts.length} alerts');
       return alerts;
@@ -122,7 +206,7 @@ class SimpleAlertService {
   /// Delete alert
   Future<bool> deleteAlert(String alertId) async {
     try {
-      await _firestore.collection('simple_alerts').doc(alertId).delete();
+      await _firestore.collection('rate_alerts').doc(alertId).delete();
       print('✅ Alert deleted: $alertId');
       return true;
     } catch (e) {
@@ -233,7 +317,7 @@ class SimpleAlertService {
   /// Deactivate alert after notification
   Future<void> _deactivateAlert(String alertId) async {
     try {
-      await _firestore.collection('simple_alerts').doc(alertId).update({
+      await _firestore.collection('rate_alerts').doc(alertId).update({
         'isActive': false,
         'triggeredAt': FieldValue.serverTimestamp(),
       });

@@ -21,9 +21,16 @@ class _SimpleAlertsListScreenState extends State<SimpleAlertsListScreen> {
         backgroundColor: const Color(0xFF0F0F23),
         title: const Text('My Alerts', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          IconButton(
+            onPressed: () => setState(() {}), // Refresh button
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            tooltip: 'Refresh',
+          ),
+        ],
       ),
       body: StreamBuilder<List<SimpleRateAlert>>(
-        stream: _alertService.getAlertsStream(), // Use stream instead of future
+        stream: _alertService.getAlertsStream(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -32,21 +39,30 @@ class _SimpleAlertsListScreenState extends State<SimpleAlertsListScreen> {
           }
 
           if (snapshot.hasError) {
+            print('❌ Stream error: ${snapshot.error}');
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(Icons.error, color: Colors.red, size: 64),
                   const SizedBox(height: 16),
+                  const Text(
+                    'Error loading alerts',
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
                   Text(
-                    'Error: ${snapshot.error}',
-                    style: const TextStyle(color: Colors.white),
+                    '${snapshot.error}',
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => setState(() {}), // Refresh
-                    child: const Text('Retry'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(255, 10, 108, 236),
+                    ),
+                    child: const Text('Retry', style: TextStyle(color: Colors.white)),
                   ),
                 ],
               ),
@@ -54,15 +70,20 @@ class _SimpleAlertsListScreenState extends State<SimpleAlertsListScreen> {
           }
 
           final alerts = snapshot.data ?? [];
-
+          
           if (alerts.isEmpty) {
             return _buildEmptyState();
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: alerts.length,
-            itemBuilder: (context, index) => _buildAlertCard(alerts[index]),
+          return RefreshIndicator(
+            onRefresh: () async {
+              setState(() {});
+            },
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: alerts.length,
+              itemBuilder: (context, index) => _buildAlertCard(alerts[index]),
+            ),
           );
         },
       ),
@@ -92,7 +113,7 @@ class _SimpleAlertsListScreenState extends State<SimpleAlertsListScreen> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Create your first rate alert to get notified',
+            'Create your first rate alert to get notified\nwhen exchange rates hit your target',
             style: TextStyle(color: Colors.white70, fontSize: 16),
             textAlign: TextAlign.center,
           ),
@@ -109,6 +130,7 @@ class _SimpleAlertsListScreenState extends State<SimpleAlertsListScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color.fromARGB(255, 10, 108, 236),
               foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
           ),
         ],
@@ -160,13 +182,25 @@ class _SimpleAlertsListScreenState extends State<SimpleAlertsListScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            'Alert when rate goes ${alert.condition} ${alert.targetRate.toStringAsFixed(4)}',
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
+          Row(
+            children: [
+              Icon(
+                alert.condition == 'above' ? Icons.trending_up : Icons.trending_down,
+                color: alert.condition == 'above' ? Colors.green : Colors.red,
+                size: 16,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Alert when rate goes ${alert.condition} ${alert.targetRate.toStringAsFixed(4)}',
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Row(
             children: [
+              Icon(Icons.access_time, color: Colors.white54, size: 14),
+              const SizedBox(width: 4),
               Text(
                 'Created: ${_formatDate(alert.createdAt)}',
                 style: const TextStyle(color: Colors.white54, fontSize: 12),
@@ -175,6 +209,7 @@ class _SimpleAlertsListScreenState extends State<SimpleAlertsListScreen> {
               IconButton(
                 onPressed: () => _deleteAlert(alert),
                 icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                tooltip: 'Delete Alert',
               ),
             ],
           ),
@@ -191,8 +226,10 @@ class _SimpleAlertsListScreenState extends State<SimpleAlertsListScreen> {
       return '${difference.inDays}d ago';
     } else if (difference.inHours > 0) {
       return '${difference.inHours}h ago';
-    } else {
+    } else if (difference.inMinutes > 0) {
       return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
     }
   }
 
@@ -221,11 +258,39 @@ class _SimpleAlertsListScreenState extends State<SimpleAlertsListScreen> {
     );
 
     if (confirm == true) {
-      final success = await _alertService.deleteAlert(alert.id);
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Alert deleted'), backgroundColor: Colors.green),
-        );
+      try {
+        final success = await _alertService.deleteAlert(alert.id);
+        if (success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text('Alert deleted: ${alert.fromCurrency}/${alert.toCurrency}'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          throw Exception('Failed to delete alert');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text('Error deleting alert: $e'),
+                ],
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }

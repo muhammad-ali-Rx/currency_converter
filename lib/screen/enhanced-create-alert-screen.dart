@@ -2,6 +2,7 @@ import 'package:currency_converter/model/rate-alert.dart';
 import 'package:currency_converter/services/alert-service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SimpleCreateAlertScreen extends StatefulWidget {
   const SimpleCreateAlertScreen({super.key});
@@ -14,12 +15,13 @@ class _SimpleCreateAlertScreenState extends State<SimpleCreateAlertScreen> {
   final _formKey = GlobalKey<FormState>();
   final _targetRateController = TextEditingController();
   final _alertService = SimpleAlertService();
-  
+  final _auth = FirebaseAuth.instance;
+
   String _fromCurrency = 'USD';
-  String _toCurrency = 'EUR';
+  String _toCurrency = 'PKR';
   String _condition = 'above';
   bool _isLoading = false;
-
+  
   final List<String> _currencies = [
     'USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'INR', 'PKR'
   ];
@@ -28,6 +30,16 @@ class _SimpleCreateAlertScreenState extends State<SimpleCreateAlertScreen> {
   void initState() {
     super.initState();
     _checkNotificationPermissions();
+    _checkUserAuthentication();
+  }
+
+  Future<void> _checkUserAuthentication() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      print('⚠️ No user logged in - alerts will be created anonymously');
+    } else {
+      print('✅ User logged in: ${user.email} (${user.uid})');
+    }
   }
 
   Future<void> _checkNotificationPermissions() async {
@@ -86,7 +98,7 @@ class _SimpleCreateAlertScreenState extends State<SimpleCreateAlertScreen> {
         title: const Text('Create Alert', style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          // Test notification button
+          _buildUserIndicator(),
           IconButton(
             onPressed: _testNotification,
             icon: const Icon(Icons.notifications_active, color: Colors.orange),
@@ -100,7 +112,9 @@ class _SimpleCreateAlertScreenState extends State<SimpleCreateAlertScreen> {
           key: _formKey,
           child: Column(
             children: [
-              // Notification Status Card
+              _buildUserStatusCard(),
+              const SizedBox(height: 16),
+              
               _buildNotificationStatusCard(),
               const SizedBox(height: 20),
               
@@ -234,7 +248,7 @@ class _SimpleCreateAlertScreenState extends State<SimpleCreateAlertScreen> {
                       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
                       style: const TextStyle(color: Colors.white, fontSize: 18),
                       decoration: const InputDecoration(
-                        hintText: 'Enter target rate (e.g., 1.2500)',
+                        hintText: 'Enter target rate (e.g., 278.50)',
                         hintStyle: TextStyle(color: Colors.white54),
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.trending_up, color: Colors.white70),
@@ -279,6 +293,85 @@ class _SimpleCreateAlertScreenState extends State<SimpleCreateAlertScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildUserIndicator() {
+    final user = _auth.currentUser;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: user != null ? Colors.green.withOpacity(0.2) : Colors.orange.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                user != null ? Icons.person : Icons.person_outline,
+                size: 16,
+                color: user != null ? Colors.green : Colors.orange,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                user != null ? 'Logged In' : 'Anonymous',
+                style: TextStyle(
+                  color: user != null ? Colors.green : Colors.orange,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserStatusCard() {
+    final user = _auth.currentUser;
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: user != null ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: user != null ? Colors.green.withOpacity(0.3) : Colors.orange.withOpacity(0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            user != null ? Icons.account_circle : Icons.account_circle_outlined,
+            color: user != null ? Colors.green : Colors.orange,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  user != null ? 'Logged in as ${user.email ?? "User"}' : 'Creating as Anonymous User',
+                  style: TextStyle(
+                    color: user != null ? Colors.green : Colors.orange,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  user != null 
+                      ? 'Alert will be saved to your account'
+                      : 'Alert will be created with anonymous user info',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -364,7 +457,7 @@ class _SimpleCreateAlertScreenState extends State<SimpleCreateAlertScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-
+    
     try {
       final alert = SimpleRateAlert(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -375,25 +468,58 @@ class _SimpleCreateAlertScreenState extends State<SimpleCreateAlertScreen> {
         createdAt: DateTime.now(),
       );
 
+      print('🔄 Creating alert: ${alert.fromCurrency}/${alert.toCurrency} ${alert.condition} ${alert.targetRate}');
+      
       final alertId = await _alertService.addAlert(alert);
-
+      
       if (alertId != null && mounted) {
+        print('✅ Alert created successfully with ID: $alertId');
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Alert created successfully!'),
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('✅ Alert created successfully!'),
+                      Text(
+                        '${alert.fromCurrency}/${alert.toCurrency} ${alert.condition} ${alert.targetRate}',
+                        style: const TextStyle(fontSize: 12, color: Colors.white70),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
           ),
         );
+        
         Navigator.pop(context);
       } else {
-        throw Exception('Failed to create alert');
+        throw Exception('Failed to create alert - no ID returned');
       }
     } catch (e) {
+      print('❌ Error creating alert: $e');
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Error: ${e.toString()}'),
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(child: Text('❌ Error: ${e.toString()}')),
+              ],
+            ),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
