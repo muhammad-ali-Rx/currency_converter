@@ -1,6 +1,9 @@
+import 'package:currency_converter/model/chat_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:intl/intl.dart';
+import '../services/customer_care_service.dart';
 
 class HelpSupportScreen extends StatefulWidget {
   const HelpSupportScreen({super.key});
@@ -25,7 +28,9 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
+    // Initialize customer care collections
+    CustomerCareService.initializeCollections();
   }
 
   @override
@@ -56,10 +61,12 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
           unselectedLabelColor: const Color(0xFF8A94A6),
           labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
           unselectedLabelStyle: const TextStyle(fontSize: 12),
+          isScrollable: true,
           tabs: const [
             Tab(text: 'FAQs'),
             Tab(text: 'Guides'),
             Tab(text: 'Contact'),
+            Tab(text: 'Live Chat'),
             Tab(text: 'About'),
           ],
         ),
@@ -70,6 +77,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
           _buildFaqTab(),
           _buildGuidesTab(),
           _buildContactTab(),
+          _buildLiveChatTab(),
           _buildAboutTab(),
         ],
       ),
@@ -391,7 +399,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
           
           const SizedBox(height: 32),
           
-          // Enhanced Contact Form
+          // Enhanced Contact Form with Firebase Integration
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -428,6 +436,10 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
         ],
       ),
     );
+  }
+
+  Widget _buildLiveChatTab() {
+    return LiveChatWidget();
   }
 
   Widget _buildAboutTab() {
@@ -1146,7 +1158,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
     }
   }
 
-  // Enhanced form submission
+  // Enhanced form submission with Firebase integration
   Future<void> _submitContactForm() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -1172,57 +1184,27 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> with TickerProvid
       };
       
       final String subjectText = subjectMap[_selectedSubject] ?? 'General Inquiry';
-      
-      // Create email content
-      final String emailBody = '''
-Contact Form Submission
 
-Name: $name
-Email: $email
-Subject: $subjectText
-Date: ${DateTime.now().toString()}
-
-Message:
-$message
-
----
-Device Info:
-- App: Currency Converter
-- Version: 2.1.0
-- Platform: ${Theme.of(context).platform.name}
-
-Sent from Currency Converter App Contact Form
-      ''';
-
-      // Launch email with pre-filled content
-      final Uri emailUri = Uri(
-        scheme: 'mailto',
-        path: supportEmail,
-        query: Uri(queryParameters: {
-          'subject': 'Contact Form: $subjectText from $name',
-          'body': emailBody,
-        }).query,
+      // Save to Firebase
+      await CustomerCareService.submitContactForm(
+        name: name,
+        email: email,
+        subject: subjectText,
+        message: message,
       );
 
-      if (await canLaunchUrl(emailUri)) {
-        await launchUrl(emailUri);
-        
-        // Clear form after successful submission
-        _nameController.clear();
-        _emailController.clear();
-        _messageController.clear();
-        setState(() {
-          _selectedSubject = 'general';
-        });
-        
-        _showSuccessSnackBar('Email client opened! Please send the email to complete your request.');
-      } else {
-        // Fallback: Copy email content to clipboard
-        await Clipboard.setData(ClipboardData(text: 'To: $supportEmail\n\n$emailBody'));
-        _showSuccessSnackBar('Email content copied to clipboard. Please paste it in your email app.');
-      }
+      // Clear form after successful submission
+      _nameController.clear();
+      _emailController.clear();
+      _messageController.clear();
+      setState(() {
+        _selectedSubject = 'general';
+      });
+      
+      _showSuccessSnackBar('Contact form submitted successfully! We\'ll get back to you within 24 hours.');
+      
     } catch (e) {
-      _showErrorSnackBar('Error: ${e.toString()}');
+      _showErrorSnackBar('Error submitting form: ${e.toString()}');
     } finally {
       setState(() {
         _isSubmitting = false;
@@ -1262,5 +1244,329 @@ Sent from Currency Converter App Contact Form
         duration: const Duration(seconds: 4),
       ),
     );
+  }
+}
+
+// Live Chat Widget with Firebase Integration
+class LiveChatWidget extends StatefulWidget {
+  @override
+  _LiveChatWidgetState createState() => _LiveChatWidgetState();
+}
+
+class _LiveChatWidgetState extends State<LiveChatWidget> {
+  final TextEditingController _chatController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  bool _isConnected = false;
+  String? _chatId;
+  LiveChat? _currentChat;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeChat();
+  }
+
+  Future<void> _initializeChat() async {
+    try {
+      setState(() {
+        _isConnected = true;
+      });
+      
+      // Start a new chat session
+      final chatId = await CustomerCareService.startLiveChat();
+      setState(() {
+        _chatId = chatId;
+      });
+      
+      // Listen to chat updates
+      CustomerCareService.getChatStream(chatId).listen((chat) {
+        if (chat != null && mounted) {
+          setState(() {
+            _currentChat = chat;
+          });
+          _scrollToBottom();
+        }
+      });
+      
+    } catch (e) {
+      print('Error initializing chat: $e');
+      setState(() {
+        _isConnected = false;
+      });
+    }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _chatController.text.trim();
+    if (text.isEmpty || _chatId == null) return;
+
+    try {
+      // Send user message
+      await CustomerCareService.sendChatMessage(
+        chatId: _chatId!,
+        message: text,
+        isUser: true,
+      );
+      
+      _chatController.clear();
+      
+      // Note: Removed auto-response - now admin will reply manually
+      
+    } catch (e) {
+      print('Error sending message: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to send message: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Chat Header
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A2E),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color.fromARGB(255, 10, 108, 236).withOpacity(0.3),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: _isConnected ? Colors.green : Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  _isConnected ? Icons.support_agent : Icons.offline_bolt,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Live Support Chat',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      _isConnected ? 'Online - Admin will respond soon' : 'Offline',
+                      style: TextStyle(
+                        color: _isConnected ? Colors.green : Colors.red,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (_isConnected)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'Online',
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Chat Messages
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A2E),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color.fromARGB(255, 10, 108, 236).withOpacity(0.3),
+              ),
+            ),
+            child: Column(
+              children: [
+                Expanded(
+                  child: _currentChat == null
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: Color.fromARGB(255, 10, 108, 236),
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _currentChat!.messages.length,
+                          itemBuilder: (context, index) {
+                            return _buildMessageBubble(_currentChat!.messages[index]);
+                          },
+                        ),
+                ),
+                
+                // Message Input
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Color(0xFF2A2A3E)),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _chatController,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: 'Type your message...',
+                            hintStyle: const TextStyle(color: Color(0xFF8A94A6)),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              borderSide: const BorderSide(color: Color(0xFF8A94A6)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              borderSide: const BorderSide(color: Color.fromARGB(255, 10, 108, 236)),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          ),
+                          onSubmitted: (_) => _sendMessage(),
+                          maxLines: null,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        decoration: const BoxDecoration(
+                          color: Color.fromARGB(255, 10, 108, 236),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          onPressed: _sendMessage,
+                          icon: const Icon(Icons.send, color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMessageBubble(ChatMessage message) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        children: [
+          if (!message.isUser) ...[
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: const Color.fromARGB(255, 10, 108, 236),
+              child: const Icon(Icons.support_agent, color: Colors.white, size: 16),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: message.isUser 
+                    ? const Color.fromARGB(255, 10, 108, 236)
+                    : const Color(0xFF2A2A3E),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (!message.isUser && message.senderName != 'Support Agent')
+                    Text(
+                      message.senderName,
+                      style: const TextStyle(
+                        color: Color.fromARGB(255, 10, 108, 236),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  if (!message.isUser && message.senderName != 'Support Agent')
+                    const SizedBox(height: 4),
+                  Text(
+                    message.text,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    DateFormat('HH:mm').format(message.timestamp),
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.6),
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (message.isUser) ...[
+            const SizedBox(width: 8),
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: Colors.green,
+              child: const Icon(Icons.person, color: Colors.white, size: 16),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _chatController.dispose();
+    _scrollController.dispose();
+    // End chat session when widget is disposed
+    if (_chatId != null) {
+      CustomerCareService.endChat(_chatId!);
+    }
+    super.dispose();
   }
 }

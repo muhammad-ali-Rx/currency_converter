@@ -1,14 +1,14 @@
 import 'package:currency_converter/auth/auth_provider.dart';
 import 'package:currency_converter/screen/login.dart';
 import 'package:currency_converter/screen/admin/admin_dashboard.dart';
-import 'package:currency_converter/services/alert-service.dart';// Use the fixed service
+import 'package:currency_converter/services/alert-service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
-import 'screen/splash.dart';
 import 'screen/mainscreen.dart';
+import 'services/customer_care_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +23,15 @@ void main() async {
     print('✅ Firebase initialized successfully');
   } catch (e) {
     print('❌ Firebase initialization error: $e');
+  }
+
+  // Initialize Customer Care Collections
+  try {
+    print('🔄 Initializing Customer Care system...');
+    await CustomerCareService.initializeCollections();
+    print('✅ Customer Care system initialized');
+  } catch (e) {
+    print('❌ Customer Care initialization error: $e');
   }
 
   // System UI settings
@@ -84,16 +93,25 @@ void main() async {
     // Continue anyway - app should work without notifications
   }
 
-  runApp(const CurrencyConverterApp());
+  // Initialize Feedback Service
+  try {
+    print('🔄 Initializing feedback service...');
+    // The feedback service will auto-initialize when first used
+    print('✅ Feedback service ready');
+  } catch (e) {
+    print('❌ Feedback service initialization error: $e');
+  }
+
+  runApp(const MyApp());
 }
 
-class CurrencyConverterApp extends StatelessWidget {
-  const CurrencyConverterApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => AuthProvider(),
+      create: (context) => AuthProvider(),
       child: MaterialApp(
         title: 'Currency Converter',
         debugShowCheckedModeBanner: false,
@@ -106,9 +124,102 @@ class CurrencyConverterApp extends StatelessWidget {
           ),
           fontFamily: 'Roboto',
           useMaterial3: true,
-          scaffoldBackgroundColor: const Color(0xFF0A0A1A),
+          scaffoldBackgroundColor: const Color(0xFF0F0F23),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFF0F0F23),
+            elevation: 0,
+            iconTheme: IconThemeData(color: Colors.white),
+            titleTextStyle: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          textTheme: const TextTheme(
+            bodyLarge: TextStyle(color: Colors.white),
+            bodyMedium: TextStyle(color: Colors.white),
+          ),
+          inputDecorationTheme: InputDecorationTheme(
+            filled: true,
+            fillColor: const Color(0xFF1A1A2E),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            hintStyle: const TextStyle(color: Color(0xFF8A94A6)),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromARGB(255, 10, 108, 236),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
+          textButtonTheme: TextButtonThemeData(
+            style: TextButton.styleFrom(
+              foregroundColor: const Color.fromARGB(255, 10, 108, 236),
+            ),
+          ),
         ),
-        home: const AppInitializer(),
+        home: const SplashScreen(),
+      ),
+    );
+  }
+}
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
+
+  void _initializeApp() async {
+    // Show splash screen for 3 seconds
+    await Future.delayed(const Duration(seconds: 3));
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const AppInitializer()),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F0F23),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              color: const Color.fromARGB(255, 10, 108, 236),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Loading...',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -122,68 +233,10 @@ class AppInitializer extends StatefulWidget {
 }
 
 class _AppInitializerState extends State<AppInitializer> {
-  bool _showSplash = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeApp();
-  }
-
-  void _initializeApp() async {
-    // Show splash screen for 3 seconds
-    await Future.delayed(const Duration(seconds: 3));
-    if (mounted) {
-      setState(() {
-        _showSplash = false;
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    // Clean up background service when app is disposed
-    try {
-      BackgroundAlertChecker.stopChecking();
-    } catch (e) {
-      print('Error stopping background service: $e');
-    }
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (_showSplash) {
-      return const UniqueSplashScreen();
-    }
-
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
-        // Show loading screen while checking auth state
-        if (authProvider.isLoading) {
-          return const Scaffold(
-            backgroundColor: Color(0xFF0A0A1A),
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    color: Color.fromARGB(255, 10, 108, 236),
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'Loading...',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-
         // Navigate based on auth state and role
         if (authProvider.isAuthenticated) {
           print('✅ User is authenticated: ${authProvider.user?.uid}');

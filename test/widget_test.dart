@@ -5,7 +5,7 @@ import 'package:currency_converter/screen/splash.dart';
 void main() {
   testWidgets('App shows SplashScreen initially', (WidgetTester tester) async {
     // Build the app
-    await tester.pumpWidget(const CurrencyConverterApp());
+    await tester.pumpWidget(const MyApp());
 
     // Check if SplashScreen widget is present
     expect(find.byType(UniqueSplashScreen), findsOneWidget);

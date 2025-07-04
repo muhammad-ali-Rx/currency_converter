@@ -1,3 +1,4 @@
+import 'package:currency_converter/services/Feedback-service.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart' as launcher;
 
@@ -420,86 +421,73 @@ class _UserFeedbackScreenState extends State<UserFeedbackScreen> with TickerProv
     return null;
   }
 
+  // Updated submit methods using FeedbackService
   void _submitFeedback() async {
     if (!_formKey.currentState!.validate()) return;
+
     setState(() => _isSubmitting = true);
-    await Future.delayed(const Duration(seconds: 2));
-    
-    _sendFeedbackEmail(
+
+    final success = await FeedbackService.submitFeedback(
       type: _feedbackType,
-      name: _nameController.text.trim().isEmpty ? 'Anonymous User' : _nameController.text.trim(),
-      email: _emailController.text.trim().isEmpty ? 'No email provided' : _emailController.text.trim(),
-      feedback: _feedbackController.text.trim(),
+      name: _nameController.text.trim(),
+      email: _emailController.text.trim(),
+      message: _feedbackController.text.trim(),
     );
-    
-    _nameController.clear();
-    _emailController.clear();
-    _feedbackController.clear();
+
     setState(() => _isSubmitting = false);
-    _showSuccessSnackBar('Thank you for your feedback!');
+
+    if (success) {
+      _nameController.clear();
+      _emailController.clear();
+      _feedbackController.clear();
+      _showSuccessSnackBar('Thank you for your feedback! It has been submitted successfully.');
+    } else {
+      _showErrorSnackBar('Failed to submit feedback. Please try again.');
+    }
   }
 
   void _submitIssueReport() async {
     if (!_issueFormKey.currentState!.validate()) return;
+
     setState(() => _isSubmittingIssue = true);
-    await Future.delayed(const Duration(seconds: 2));
-    
-    _sendIssueReportEmail(
+
+    final success = await FeedbackService.submitFeedback(
       type: _issueType,
-      priority: _priority,
-      issue: _issueController.text.trim(),
+      name: 'Anonymous User',
+      email: 'No email provided',
+      message: _issueController.text.trim(),
       steps: _stepsController.text.trim(),
     );
-    
-    _issueController.clear();
-    _stepsController.clear();
+
     setState(() => _isSubmittingIssue = false);
-    _showSuccessSnackBar('Issue reported successfully!');
+
+    if (success) {
+      _issueController.clear();
+      _stepsController.clear();
+      _showSuccessSnackBar('Issue reported successfully! We will look into it.');
+    } else {
+      _showErrorSnackBar('Failed to report issue. Please try again.');
+    }
   }
 
-  void _submitRating() {
-    _sendRatingEmail(_rating);
-    _showSuccessSnackBar('Thank you for rating our app!');
+  void _submitRating() async {
+    final success = await FeedbackService.submitFeedback(
+      type: 'App Rating',
+      name: 'Anonymous User',
+      email: 'No email provided',
+      message: 'User rated the app: ${_rating.toInt()} stars - ${_getRatingText(_rating)}',
+      rating: _rating.toInt(),
+    );
+
+    if (success) {
+      _showSuccessSnackBar('Thank you for rating our app!');
+    } else {
+      _showErrorSnackBar('Failed to submit rating. Please try again.');
+    }
   }
 
   void _rateOnStore() {
     _showSuccessSnackBar('Redirecting to app store...');
-  }
-
-  Future<void> _sendFeedbackEmail({required String type, required String name, required String email, required String feedback}) async {
-    try {
-      final emailUrl = 'mailto:alimuhammadali8753@gmail.com?subject=${Uri.encodeComponent('User Feedback - $type')}&body=${Uri.encodeComponent('Name: $name\nEmail: $email\nType: $type\n\nFeedback:\n$feedback')}';
-      final uri = Uri.parse(emailUrl);
-      if (await launcher.canLaunchUrl(uri)) {
-        await launcher.launchUrl(uri);
-      }
-    } catch (e) {
-      _showErrorSnackBar('Could not launch email client');
-    }
-  }
-
-  Future<void> _sendIssueReportEmail({required String type, required String priority, required String issue, required String steps}) async {
-    try {
-      final emailUrl = 'mailto:alimuhammadali8753@gmail.com?subject=${Uri.encodeComponent('Issue Report - $type')}&body=${Uri.encodeComponent('Type: $type\nPriority: $priority\n\nIssue:\n$issue\n\nSteps:\n$steps')}';
-      final uri = Uri.parse(emailUrl);
-      if (await launcher.canLaunchUrl(uri)) {
-        await launcher.launchUrl(uri);
-      }
-    } catch (e) {
-      _showErrorSnackBar('Could not launch email client');
-    }
-  }
-
-  Future<void> _sendRatingEmail(double rating) async {
-    try {
-      final emailUrl = 'mailto:alimuhammadali8753@gmail.com?subject=${Uri.encodeComponent('App Rating')}&body=${Uri.encodeComponent('User rated the app: ${rating.toInt()} stars\nRating: ${_getRatingText(rating)}')}';
-      final uri = Uri.parse(emailUrl);
-      if (await launcher.canLaunchUrl(uri)) {
-        await launcher.launchUrl(uri);
-      }
-    } catch (e) {
-      _showErrorSnackBar('Could not launch email client');
-    }
   }
 
   void _showSuccessSnackBar(String message) {
