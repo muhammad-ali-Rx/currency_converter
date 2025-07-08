@@ -1,6 +1,5 @@
 import 'package:currency_converter/auth/auth_provider.dart';
 import 'package:currency_converter/screen/CurrencyNewsScreen.dart';
-import 'package:currency_converter/screen/Portfolio_Screen.dart';
 import 'package:currency_converter/screen/addarticlescreen.dart';
 import 'package:currency_converter/screen/admin/components/admin_add_article.dart';
 import 'package:currency_converter/screen/debug-notification-screen.dart';
@@ -45,13 +44,6 @@ class FixedOverflowDrawer extends StatelessWidget {
                     ),
                     _buildCompactTile(
                       context,
-                      Icons.account_balance_wallet_rounded,
-                      'Portfolio',
-                      () => _navigateToScreen(context, 'Portfolio'),
-                      Colors.green,
-                    ),
-                    _buildCompactTile(
-                      context,
                       Icons.trending_up_rounded,
                       'Rate Alerts',
                       () => _navigateToScreen(context, 'RateAlerts'),
@@ -92,13 +84,6 @@ class FixedOverflowDrawer extends StatelessWidget {
                       Colors.blue,
                     ),
                     _buildAdminPanelButton(context),
-                    _buildCompactTile(
-                      context,
-                      Icons.settings_rounded,
-                      'Settings',
-                      () => _navigateToScreen(context, 'Settings'),
-                      Colors.grey,
-                    ),
                   ]),
                   
                   // Debug Section (Always visible for testing)
@@ -515,9 +500,7 @@ class FixedOverflowDrawer extends StatelessWidget {
       Widget? screen;
       
       switch (screenName) {
-        case 'Portfolio':
-          screen = const PortfolioScreen();
-          break;
+       
         case 'RateAlerts':
           screen = const SimpleAlertsListScreen();
           break;

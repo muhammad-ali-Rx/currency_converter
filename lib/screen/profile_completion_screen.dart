@@ -91,6 +91,17 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
     super.dispose();
   }
 
+  // ✅ NEW: Calculate age from date of birth
+  int _calculateAge(DateTime birthDate) {
+    final now = DateTime.now();
+    int age = now.year - birthDate.year;
+    if (now.month < birthDate.month || 
+        (now.month == birthDate.month && now.day < birthDate.day)) {
+      age--;
+    }
+    return age;
+  }
+
   void _filterCountries(String query) {
     setState(() {
       if (query.isEmpty) {
@@ -271,12 +282,12 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
                           return Container(
                             margin: const EdgeInsets.only(bottom: 8),
                             decoration: BoxDecoration(
-                              color: isSelected 
+                              color: isSelected
                                   ? const Color(0xFF4ECDC4).withOpacity(0.2)
                                   : const Color(0xFF1A1A2E),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: isSelected 
+                                color: isSelected
                                     ? const Color(0xFF4ECDC4)
                                     : Colors.transparent,
                                 width: 2,
@@ -301,7 +312,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
                                   fontSize: 12,
                                 ),
                               ),
-                              trailing: isSelected 
+                              trailing: isSelected
                                   ? const Icon(Icons.check_circle, color: Color(0xFF4ECDC4))
                                   : null,
                               onTap: () {
@@ -325,54 +336,64 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
     );
   }
 
+  // ✅ UPDATED: Welcome header with username
   Widget _buildWelcomeHeader() {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFF4ECDC4).withOpacity(0.2),
-                const Color(0xFF44A08D).withOpacity(0.2),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: const Color(0xFF4ECDC4).withOpacity(0.3),
-            ),
-          ),
-          child: const Column(
-            children: [
-              Text(
-                '🎉',
-                style: TextStyle(fontSize: 48),
-              ),
-              SizedBox(height: 16),
-              Text(
-                'Complete Your Profile',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        final userName = authProvider.user?.displayName ?? 
+                        authProvider.userData?['name'] ?? 
+                        authProvider.user?.email?.split('@')[0] ?? 
+                        'User';
+        
+        return Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF4ECDC4).withOpacity(0.2),
+                    const Color(0xFF44A08D).withOpacity(0.2),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 8),
-              Text(
-                'Add your details to personalize your currency experience',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF8A94A6),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: const Color(0xFF4ECDC4).withOpacity(0.3),
                 ),
-                textAlign: TextAlign.center,
               ),
-            ],
-          ),
-        ),
-      ],
+              child: Column(
+                children: [
+                  const Text(
+                    '🎉',
+                    style: TextStyle(fontSize: 48),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Welcome to $userName',
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Add your details to personalize your currency experience',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Color(0xFF8A94A6),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -448,6 +469,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
     String? Function(String?)? validator,
+    bool readOnly = false, // ✅ NEW: Add readOnly parameter
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -465,12 +487,17 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
           controller: controller,
           keyboardType: keyboardType,
           maxLines: maxLines,
-          style: const TextStyle(color: Colors.white),
+          readOnly: readOnly, // ✅ NEW: Use readOnly parameter
+          style: TextStyle(
+            color: readOnly ? const Color(0xFF8A94A6) : Colors.white, // ✅ NEW: Different color for readonly
+          ),
           validator: validator,
           decoration: InputDecoration(
             prefixIcon: Icon(icon, color: const Color(0xFF4ECDC4)),
             filled: true,
-            fillColor: const Color(0xFF0F0F23),
+            fillColor: readOnly 
+                ? const Color(0xFF0F0F23).withOpacity(0.5) // ✅ NEW: Different background for readonly
+                : const Color(0xFF0F0F23),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide.none,
@@ -489,7 +516,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
                 width: 2,
               ),
             ),
-            hintText: 'Enter your $label',
+            hintText: readOnly ? '' : 'Enter your $label', // ✅ NEW: No hint for readonly
             hintStyle: const TextStyle(color: Color(0xFF8A94A6)),
           ),
         ),
@@ -497,6 +524,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
     );
   }
 
+  // ✅ UPDATED: Date field with auto age calculation
   Widget _buildDateField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -632,6 +660,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
     }
   }
 
+  // ✅ UPDATED: Auto-calculate age when date is selected
   Future<void> _selectDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -656,6 +685,9 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
+        // ✅ NEW: Auto-calculate and set age
+        final calculatedAge = _calculateAge(picked);
+        _ageController.text = calculatedAge.toString();
       });
     }
   }
@@ -696,6 +728,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final userId = authProvider.user?.uid;
+
       if (userId == null) throw Exception('User not authenticated');
 
       Map<String, dynamic> updateData = {
@@ -762,7 +795,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
 
   void _navigateToMainScreen() {
     Navigator.push(context, MaterialPageRoute(builder: (context) {
-      return const Mainscreen(); 
+      return const Mainscreen();
     }));
   }
 
@@ -811,18 +844,20 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen>
                             const SizedBox(height: 20),
                             _buildDateField(),
                             const SizedBox(height: 20),
+                            // ✅ UPDATED: Age field is now read-only and auto-calculated
                             _buildInputField(
                               controller: _ageController,
                               label: 'Age',
                               icon: Icons.cake,
                               keyboardType: TextInputType.number,
+                              readOnly: true, // ✅ NEW: Make age field read-only
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Please enter your age';
+                                  return 'Please select your date of birth to calculate age';
                                 }
                                 final age = int.tryParse(value);
                                 if (age == null || age < 13 || age > 120) {
-                                  return 'Please enter a valid age (13-120)';
+                                  return 'Invalid age calculated. Please check your date of birth';
                                 }
                                 return null;
                               },

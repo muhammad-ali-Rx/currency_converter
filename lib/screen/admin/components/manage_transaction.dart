@@ -170,7 +170,7 @@ class _ManageTransactionsScreenState extends State<ManageTransactionsScreen> wit
   // Tab data
   final List<Map<String, dynamic>> _tabs = [
     {
-      'title': 'All Transactions',
+      'title': 'All Conversions',
       'icon': Icons.list_alt_rounded,
       'color': ModernConstants.accent,
     },
@@ -180,7 +180,7 @@ class _ManageTransactionsScreenState extends State<ManageTransactionsScreen> wit
       'color': const Color(0xFF3B82F6),
     },
     {
-      'title': 'Transaction History',
+      'title': 'Conversions History',
       'icon': Icons.history_rounded,
       'color': const Color(0xFF8B5CF6),
     },
@@ -375,7 +375,7 @@ class _ManageTransactionsScreenState extends State<ManageTransactionsScreen> wit
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
-          'Manage Transactions',
+          'Manage Conversions',
           style: TextStyle(
             color: ModernConstants.textPrimary,
             fontSize: 20,
@@ -420,7 +420,7 @@ class _ManageTransactionsScreenState extends State<ManageTransactionsScreen> wit
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Transaction Management',
+                'Conversions Management',
                 style: TextStyle(
                   color: ModernConstants.textPrimary,
                   fontSize: ResponsiveHelper.getTitleFontSize(context),
@@ -429,7 +429,7 @@ class _ManageTransactionsScreenState extends State<ManageTransactionsScreen> wit
               ),
               const SizedBox(height: 4),
               Text(
-                'Manage and edit all user transactions',
+                'Manage and edit all user Conversions',
                 style: TextStyle(
                   color: ModernConstants.textSecondary,
                   fontSize: ResponsiveHelper.getSubtitleFontSize(context),
@@ -456,7 +456,7 @@ class _ManageTransactionsScreenState extends State<ManageTransactionsScreen> wit
         onChanged: (value) => setState(() => searchQuery = value),
         style: const TextStyle(color: ModernConstants.textPrimary),
         decoration: InputDecoration(
-          hintText: 'Search transactions, users, currencies...',
+          hintText: 'Search Conversions, users, currencies...',
           hintStyle: const TextStyle(color: ModernConstants.textTertiary),
           prefixIcon: const Icon(
             Icons.search_rounded,
@@ -552,7 +552,7 @@ class _ManageTransactionsScreenState extends State<ManageTransactionsScreen> wit
 
   Widget _buildTabContent() {
     if (isLoading) {
-      return const LoadingWidget(message: 'Loading transactions...');
+      return const LoadingWidget(message: 'Loading Conversions...');
     }
 
     if (errorMessage != null) {
@@ -1146,7 +1146,7 @@ class _TransactionDetailsDialogState extends State<TransactionDetailsDialog> {
                 children: [
                   Icon(Icons.check_circle, color: Colors.white),
                   SizedBox(width: 8),
-                  Text('Transaction deleted successfully!'),
+                  Text('Conversions deleted successfully!'),
                 ],
               ),
               backgroundColor: ModernConstants.accent,
@@ -1262,7 +1262,7 @@ class _TransactionDetailsDialogState extends State<TransactionDetailsDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Transaction Details',
+                  'Conversions Details',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -1310,7 +1310,7 @@ class _TransactionDetailsDialogState extends State<TransactionDetailsDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildDetailSection(
-          'Transaction Information',
+          'Conversions Information',
           Icons.currency_exchange_rounded,
           [
             _buildDetailRow('Transaction ID', editableTransaction['id'] ?? 'N/A'),
@@ -1651,13 +1651,13 @@ class _TransactionDetailsDialogState extends State<TransactionDetailsDialog> {
     switch (widget.tabIndex) {
       case 0:
       case 1:
-        return 'Currency Conversion Transaction';
+        return 'Currency Conversion Details';
       case 2:
         return 'Rate History Record';
       case 3:
         return 'User Activity Record';
       default:
-        return 'Transaction Record';
+        return 'Conversions Record';
     }
   }
 }

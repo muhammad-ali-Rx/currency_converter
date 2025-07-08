@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'package:currency_converter/screen/register.dart';
 import 'package:flutter/material.dart';
 
 class UniqueSplashScreen extends StatefulWidget {
@@ -12,14 +11,14 @@ class UniqueSplashScreen extends StatefulWidget {
 
 class _UniqueSplashScreenState extends State<UniqueSplashScreen>
     with TickerProviderStateMixin {
-  
+    
   // Animation Controllers
   late AnimationController _mainController;
   late AnimationController _logoController;
   late AnimationController _particleController;
   late AnimationController _textController;
   late AnimationController _progressController;
-  
+
   // Animations
   late Animation<double> _logoScale;
   late Animation<double> _logoRotation;
@@ -28,25 +27,25 @@ class _UniqueSplashScreenState extends State<UniqueSplashScreen>
   late Animation<double> _textSlide;
   late Animation<double> _progressValue;
   late Animation<Color?> _backgroundGradient;
-  
+
   // Currency symbols with animations
   final List<String> _currencySymbols = ['€', '\$', '£', '¥', '₹', '₿', '₽', '₩'];
   late List<AnimationController> _symbolControllers;
   late List<Animation<Offset>> _symbolAnimations;
   late List<Animation<double>> _symbolRotations;
   late List<Animation<double>> _symbolOpacity;
-  
+
   // Particle system
   final List<Particle> _particles = [];
   late Timer _particleTimer;
-  
+
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _initializeParticles();
     _startAnimationSequence();
-    _navigateToNextScreen();
+    // Remove _navigateToNextScreen() - AppInitializer handles navigation
   }
 
   void _initializeAnimations() {
@@ -231,34 +230,6 @@ class _UniqueSplashScreenState extends State<UniqueSplashScreen>
     _mainController.forward();
   }
 
-  void _navigateToNextScreen() {
-    Timer(const Duration(milliseconds: 5000), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const RegisterScreen(),
-            transitionsBuilder: (_, animation, __, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0.0, 0.3),
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutCubic,
-                  )),
-                  child: child,
-                ),
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 800),
-          ),
-        );
-      }
-    });
-  }
-
   @override
   void dispose() {
     _mainController.dispose();
@@ -347,6 +318,7 @@ class _UniqueSplashScreenState extends State<UniqueSplashScreen>
     );
   }
 
+  // ... rest of your build methods remain the same ...
   Widget _buildBackgroundPattern() {
     return Positioned.fill(
       child: CustomPaint(

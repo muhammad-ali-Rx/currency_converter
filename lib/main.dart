@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:currency_converter/auth/auth_provider.dart';
 import 'package:currency_converter/screen/login.dart';
 import 'package:currency_converter/screen/admin/admin_dashboard.dart';
@@ -9,6 +11,8 @@ import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'screen/mainscreen.dart';
 import 'services/customer_care_service.dart';
+// Import your splash screen
+import 'screen/splash.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -168,58 +172,8 @@ class MyApp extends StatelessWidget {
             ),
           ),
         ),
-        home: const SplashScreen(),
-      ),
-    );
-  }
-}
-
-class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> {
-  @override
-  void initState() {
-    super.initState();
-    _initializeApp();
-  }
-
-  void _initializeApp() async {
-    // Show splash screen for 3 seconds
-    await Future.delayed(const Duration(seconds: 3));
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const AppInitializer()),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F0F23),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(
-              color: const Color.fromARGB(255, 10, 108, 236),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Loading...',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-              ),
-            ),
-          ],
-        ),
+        // Start with AppInitializer instead of UniqueSplashScreen
+        home: const AppInitializer(),
       ),
     );
   }
@@ -233,10 +187,36 @@ class AppInitializer extends StatefulWidget {
 }
 
 class _AppInitializerState extends State<AppInitializer> {
+  bool _showSplash = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Show splash for 5 seconds, then hide it
+    Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        setState(() {
+          _showSplash = false;
+        });
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Show splash screen first
+    if (_showSplash) {
+      return const UniqueSplashScreen();
+    }
+
+    // After splash, show appropriate screen based on auth state
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
+        print('🔍 AppInitializer - Auth State Check:');
+        print('   Is Authenticated: ${authProvider.isAuthenticated}');
+        print('   User: ${authProvider.user?.email}');
+        print('   Is Admin: ${authProvider.isAdmin}');
+
         // Navigate based on auth state and role
         if (authProvider.isAuthenticated) {
           print('✅ User is authenticated: ${authProvider.user?.uid}');

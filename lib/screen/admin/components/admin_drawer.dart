@@ -1,4 +1,3 @@
-import 'package:currency_converter/screen/admin/components/All_Transactions.dart';
 import 'package:currency_converter/screen/admin/components/ManageAlertScreen.dart';
 import 'package:currency_converter/screen/admin/components/add_analysis_screen.dart';
 import 'package:currency_converter/screen/admin/components/admin_add_article.dart';
@@ -55,19 +54,17 @@ class _AdminDrawerState extends State<AdminDrawer> {
       'color': Colors.blue,
       'submenu': [
         {'title': 'Show Users', 'index': 2},
-        {'title': 'Add User', 'index': 2},
+        {'title': 'Manage User', 'index': 2},
       ],
     },
     {
       'icon': Icons.receipt_long_rounded,
-      'title': 'User Transactions',
+      'title': 'User Conversion',
       'index': 10,
       'hasSubmenu': true,
       'color': Colors.green,
       'submenu': [
-        {'title': 'All Transactions', 'index': 101},
-        {'title': 'Manage Transactions', 'index': 102},
-        {'title': 'Delete Transactions', 'index': 105},
+        {'title': 'Conversion', 'index': 102},
       ],
     },
     {
@@ -85,17 +82,6 @@ class _AdminDrawerState extends State<AdminDrawer> {
         {'title': 'Manage Analysis', 'index': 306},
         {'title': 'Add Chart', 'index': 303},
         {'title': 'Manage Charts', 'index': 307},
-      ],
-    },
-    {
-      'icon': Icons.settings_rounded,
-      'title': 'Settings',
-      'index': 3,
-      'hasSubmenu': true,
-      'color': Colors.teal,
-      'submenu': [
-        {'title': 'Show Settings', 'index': 3},
-        {'title': 'Add Settings', 'index': 3},
       ],
     },
     {
@@ -134,12 +120,6 @@ class _AdminDrawerState extends State<AdminDrawer> {
 
   void _handleNavigation(int index, String? title) {
     switch (index) {
-      case 101: // All Transactions
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const AllTransactionsPage()),
-        );
-        break;
       case 9: // User Feedback
         Navigator.push(
           context,
